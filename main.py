@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Import your local modules
 from config import Config
 from email_service import send_email_via_brevo
-from sheet_manager import add_new_task, load_data_globa
+from sheet_manager import add_new_task, load_data_global
 #from sheet_manager import add_new_task
 
 # Initialize FastAPI
