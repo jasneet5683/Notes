@@ -1,4 +1,5 @@
 from config import Config
+import pandas as pd
 
 def add_new_task(task_name, assigned_to, client_name, due_date):
     """
