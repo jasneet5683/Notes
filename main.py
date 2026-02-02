@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Import your local modules
-from config import Config, get_google_sheet
+from config import Config
 from email_service import send_email_via_brevo
 from sheet_manager import add_new_task, load_data_global
 
