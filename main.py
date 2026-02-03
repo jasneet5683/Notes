@@ -166,11 +166,18 @@ def get_status():
     if not document_loaded:
         print("⚠️ Data not found in memory, attempting to reload...")
         load_data_global()
-    # Create a safe preview string
-    data_preview = "No data loaded."
-    if excel_text_context:
-        # Show only the first 100 characters to keep the response light
+
+    # 2. FAILSAFE: If text exists, force document_loaded to True
+    if excel_text_context and len(excel_text_context) > 0:
+        document_loaded = True
+    
+    # 3. Create a safe preview
+    if document_loaded and excel_text_context:
+        # Show first 100 chars
         data_preview = excel_text_context[:100] + "..."
+    else:
+        data_preview = "No data loaded."
+        
     return {
         "document_loaded": document_loaded,
         "data_preview": excel_text_context[:100] if excel_text_context else "No data loaded"
