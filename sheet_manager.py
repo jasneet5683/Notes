@@ -51,6 +51,8 @@ def load_data_global():
         excel_text_context = df.to_csv(index=False)
         document_loaded = True
         print("✅ Data Successfully Loaded into Memory.")
+        # CRITICAL DEBUG: Print the first 100 chars to logs to verify content exists
+        print(f"📝 Data Preview in Memory: {excel_text_context[:100]}") 
         
     except Exception as e:
         print(f"❌ Error processing data: {str(e)}")
