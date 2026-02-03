@@ -214,27 +214,31 @@
 
         window.addEventListener("load", checkStatus);
 
-        function checkStatus() {
-            fetch(`${API_URL}/api/status`)
-                .then(r => r.json())
-                .then(d => {
-                    console.log("API Response:", data); // Check the browser console!
-        // Check if document is loaded AND data_preview has content
-        if (data.document_loaded && data.data_preview) {
-            console.log("Rendering data...");
-                    const sb = document.getElementById("statusBar");
-                    if(d.document_loaded) {
-                        sb.className = "status-bar ready"; sb.innerText = "✅ System Ready";
-                        toggleInput(true);
-                    } else {
-                        sb.className = "status-bar error"; sb.innerText = "⚠️ Connected, but Sheet is empty";
-                        toggleInput(true);
-                    }
-                })
-                .catch(() => {
-                    document.getElementById("statusBar").innerText = "❌ Offline-service not available";
-                });
-        }
+       function checkStatus() {
+    fetch(`${API_URL}/api/status`)
+        .then(r => r.json())
+        .then(data => { // 1. Renamed 'd' to 'data' to match the code inside
+            console.log("API Response:", data);
+            const sb = document.getElementById("statusBar");
+            // 2. logic to check if document is loaded
+            if (data.document_loaded) {
+                // Optional: You can also check if (data.data_preview) here if required
+                console.log("Rendering data...");
+                sb.className = "status-bar ready";
+                sb.innerText = "✅ System Ready";
+                toggleInput(true);
+            } else {
+                sb.className = "status-bar error";
+                sb.innerText = "⚠️ Connected, but Sheet is empty";
+                toggleInput(true);
+            }
+        })
+        .catch((error) => {
+            console.error("Fetch error:", error);
+            const sb = document.getElementById("statusBar");
+            if (sb) sb.innerText = "❌ Offline - service not available";
+        });
+}
 
         function toggleInput(enable) {
             document.getElementById("userInput").disabled = !enable;
