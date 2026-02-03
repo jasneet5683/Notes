@@ -15,6 +15,7 @@ class Config:
     # Google Sheets Settings
     GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
     GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDS")  # Stored as a raw JSON string in Railway
+    SHEET_NAME = "Task_Manager"  # Make sure this matches your Google Sheet Name exactly
 
     @staticmethod
     def get_google_sheet():
@@ -37,9 +38,9 @@ class Config:
             
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
             client = gspread.authorize(creds)
-            
+            return client.open(SHEET_NAME).sheet1
             # Open the sheet by ID
-            return client.open_by_key(Config.GOOGLE_SHEET_ID).sheet1
+            #return client.open_by_key(Config.GOOGLE_SHEET_ID).sheet1
 
         except json.JSONDecodeError:
             print("Error: The text in GOOGLE_CREDS is not valid JSON.")
