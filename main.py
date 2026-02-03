@@ -114,6 +114,7 @@ def check_deadlines_and_notify():
     except Exception as e:
         print(f"⚠️ Error during deadline check: {e}")
 
+#----- Helper functoin for loading data
 
 
 # --- Lifecycle Events ---
@@ -162,6 +163,14 @@ def add_task(task: TaskRequest):
 @app.get("/api/status")
 def get_status():
     global document_loaded, excel_text_context
+    if not document_loaded:
+        print("⚠️ Data not found in memory, attempting to reload...")
+        load_data_global()
+    # Create a safe preview string
+    data_preview = "No data loaded."
+    if excel_text_context:
+        # Show only the first 100 characters to keep the response light
+        data_preview = excel_text_context[:100] + "..."
     return {
         "document_loaded": document_loaded,
         "data_preview": excel_text_context[:100] if excel_text_context else "No data loaded"
