@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Import your local modules
 from config import Config
 from email_service import send_email_via_brevo
-from sheet_manager import add_new_task, load_data_global
+from sheet_manager import add_new_task, load_data_global, internal_update_task
 #from sheet_manager import add_new_task
 
 # Initialize FastAPI
@@ -150,6 +150,15 @@ def get_status():
         "document_loaded": document_loaded,
         "data_preview": excel_text_context[:100] if excel_text_context else "No data loaded"
     }
+@tool
+def update_sheet_tool(task_name: str, field: str, value: str):
+    """
+    Updates a task in the Google Sheet. 
+    Use this tool when the user asks to modify, update, change, or set a value in the tracker.
+    """
+    print(f"🛠 Tool Triggered: Updating {task_name}...")
+    result = internal_update_task(task_name, field, value)
+    return result["message"]
 
 # --- Entry Point ---
 if __name__ == "__main__":
