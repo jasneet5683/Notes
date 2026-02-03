@@ -12,3 +12,4 @@ SpeechRecognition
 jinja2
 pydub
 langchain-openai
+matplotlib
