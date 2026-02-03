@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 class Config:
     # API Keys
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
     BREVO_API_KEY = os.getenv("BREVO_API_KEY")
     
     # Email Settings
