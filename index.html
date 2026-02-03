@@ -221,7 +221,7 @@
             console.log("API Response:", data);
             const sb = document.getElementById("statusBar");
             // 2. logic to check if document is loaded
-            if (data.document_loaded) {
+            if (data.data_purview) {
                 // Optional: You can also check if (data.data_preview) here if required
                 console.log("Rendering data...");
                 sb.className = "status-bar ready";
