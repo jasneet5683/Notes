@@ -239,7 +239,7 @@ def chat(request: PromptRequest):
         # 3. Initialize LLM
         llm = ChatOpenAI(
             model="gpt-4o", 
-            openai_api_key=openai_key,
+            openai_api_key=Config.openai_key,
             temperature=0
         )
         llm_with_tools = llm.bind_tools(tools)
