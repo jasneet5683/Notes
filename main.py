@@ -41,6 +41,9 @@ excel_text_context = ""
 document_loaded = False
 
 # --- Data Models ---
+class PromptRequest(BaseModel):
+    prompt: str
+
 class TaskRequest(BaseModel):
     task_name: str
     assigned_to: str
