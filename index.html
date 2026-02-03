@@ -218,6 +218,10 @@
             fetch(`${API_URL}/api/status`)
                 .then(r => r.json())
                 .then(d => {
+                    console.log("API Response:", data); // Check the browser console!
+        // Check if document is loaded AND data_preview has content
+        if (data.document_loaded && data.data_preview) {
+            console.log("Rendering data...");
                     const sb = document.getElementById("statusBar");
                     if(d.document_loaded) {
                         sb.className = "status-bar ready"; sb.innerText = "✅ System Ready";
