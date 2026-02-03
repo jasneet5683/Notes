@@ -38,7 +38,7 @@ class Config:
             
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
             client = gspread.authorize(creds)
-            return client.open(SHEET_NAME).sheet1
+            return client.open(Config.SHEET_NAME).sheet1
             # Open the sheet by ID
             #return client.open_by_key(Config.GOOGLE_SHEET_ID).sheet1
 
