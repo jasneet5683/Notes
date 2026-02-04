@@ -245,7 +245,7 @@ def chat(request: PromptRequest):
     
     try:
         # 1. Reload data context if missing
-        if not document_loaded or not excel_text_context:
+        if not document_loaded and not excel_text_context:
             load_data_global()
             
         # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
@@ -271,7 +271,7 @@ def chat(request: PromptRequest):
         You are an advanced Project Manager Agent connected to a live Google Sheet.
         
         CURRENT DATA IN SHEET:
-        {excel_text_context}
+        {current_context}
         
         RULES:
         1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET". If a task is not there, say "I cannot find that task." Do NOT invent tasks.
