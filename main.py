@@ -253,7 +253,12 @@ def chat(request: PromptRequest):
         # 3. Bind Tools
         # We add add_task_tool to the list
         tools = [add_task_tool, update_sheet_tool, send_email_tool]
-        
+
+        # 1. Print what is about to be sent to the LLM
+        print("--- DEBUG: CONTEXT SENT TO AI ---")
+        print(excel_text_context) 
+        print("---------------------------------")
+
         # 4. Initialize LLM
         llm = ChatOpenAI(
             model="gpt-4o", 
@@ -266,7 +271,7 @@ def chat(request: PromptRequest):
         You are an advanced Project Manager Agent connected to a live Google Sheet.
         
         CURRENT DATA IN SHEET:
-        {current_context}
+        {excel_text_context}
         
         RULES:
         1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET". If a task is not there, say "I cannot find that task." Do NOT invent tasks.
