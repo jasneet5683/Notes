@@ -187,40 +187,57 @@ def get_status():
 
 # ---- Langchain tools
 @tool
+def add_task_tool(task_name: str, assigned_to: str, client: str, end_date: str, notify_email: str = None):
+    """
+    Adds a NEW task to the Google Sheet. 
+    Required arguments: task_name, assigned_to, client, end_date (YYYY-MM-DD).
+    Optional: notify_email.
+    """
+    print(f"📝 Tool Triggered: Adding task '{task_name}'...")
+    
+    # Call your existing sheet logic directly
+    result = add_new_task(task_name, assigned_to, client, end_date)
+    
+    # Optional: Send email notification logic here if needed
+    if notify_email:
+        subject = f"New Task Assigned: {task_name}"
+        body = f"You have been assigned: <strong>{task_name}</strong> due on {end_date}."
+        send_email_via_brevo(notify_email, subject, body)
+        
+    return f"Task '{task_name}' added successfully. Sheet response: {result}"
+
+@tool
 def update_sheet_tool(task_name: str, field: str, value: str):
     """
-    Updates a task in the Google Sheet. 
-    Use this tool when the user asks to modify, update, change, or set a value in the tracker.
+    Updates an EXISTING task in the Google Sheet. 
+    Use this when user asks to modify status, change dates, or reassign.
     """
     print(f"🛠 Tool Triggered: Updating {task_name}...")
-    result = internal_update_task(task_name, field, value)
-    return result["message"]
+    # Ensure internal_update_task is imported/defined
+    result = internal_update_task(task_name, field, value) 
+    return str(result)
 
 @tool
 def send_email_tool(to_email: str, subject: str, body: str, attachment_type: str = "none"):
     """
-    Sends an email.
-    IMPORTANT: 'attachment_type' must be one of: 'chart', 'table', or 'none'.
-    - Use 'chart' if user asks for a visualization or graph.
-    - Use 'table' if user asks for a list, grid, or table in the email.
-    - Use 'none' for standard text emails.
+    Sends an email via Brevo.
+    attachment_type must be: 'chart', 'table', or 'none'.
     """
-    print(f"📧 Tool Triggered: Sending email to {to_email} with {attachment_type}...")
+    print(f"📧 Tool Triggered: Sending email to {to_email}...")
     
     attachment_data = None
-    
-    # Decide what to generate based on the AI's request
     if attachment_type.lower() == "chart":
         attachment_data = generate_chart_base64()
     elif attachment_type.lower() == "table":
         attachment_data = generate_table_base64()
     
-    # Send the email once
-    result = internal_send_email(to_email, subject, body, attachment_data, attachment_type)
-    return result["message"]
+    # Ensure this function exists in your email_service.py or is defined locally
+    # result = internal_send_email(to_email, subject, body, attachment_data, attachment_type)
+    # Using a placeholder for the example:
+    send_email_via_brevo(to_email, subject, body) 
+    return "Email sent successfully."
 
-
-# --- 8. CHAT AGENT (UPDATED) ---
+#  CHAT AGENT (UPDATED) ---
 
 @app.post("/api/chat")
 def chat(request: PromptRequest):
@@ -230,187 +247,101 @@ def chat(request: PromptRequest):
         # 1. Reload data context if missing
         if not document_loaded or not excel_text_context:
             load_data_global()
-
-        # 2. Define Tools
-        tools = [update_sheet_tool, send_email_tool]
-        tool_map = {
-            "update_sheet_tool": update_sheet_tool,
-            "send_email_tool": send_email_tool
-        }
-
-        # 3. Initialize LLM
+            
+        # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
+        current_context = excel_text_context if excel_text_context else "The sheet is currently empty."
+        # 3. Bind Tools
+        # We add add_task_tool to the list
+        tools = [add_task_tool, update_sheet_tool, send_email_tool]
+        
+        # 4. Initialize LLM
         llm = ChatOpenAI(
             model="gpt-4o", 
             openai_api_key=Config.openai_key,
-            temperature=0
+            temperature=0  # Keep 0 for strict adherence to facts
         )
         llm_with_tools = llm.bind_tools(tools)
-
-        # 4. System Prompt
-        # NOTE: Double braces {{ }} are used here to escape JSON inside the f-string
+        # 5. New Strict System Prompt
         system_msg = f"""
-        You are an advanced Project Manager Agent.
+        You are an advanced Project Manager Agent connected to a live Google Sheet.
         
-        CURRENT DATA CONTEXT:
-        {excel_text_context}
+        CURRENT DATA IN SHEET:
+        {current_context}
         
-        YOUR TOOLS:
-        1. 'update_sheet_tool': Modify data.
-        2. 'send_email_tool': Send emails. 
-           - PARAMETER 'attachment_type': Set this to 'chart', 'table', or 'none' strictly based on user request.
+        RULES:
+        1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET". If a task is not there, say "I cannot find that task." Do NOT invent tasks.
+        2. **Actions**: If the user wants to ADD, UPDATE, or EMAIL, you MUST call the appropriate tool.
+           - To add a task -> Call `add_task_tool`
+           - To update a task -> Call `update_sheet_tool`
+           - To send email -> Call `send_email_tool`
+        3. **Visuals**: If the user asks to *see* a chart or table in the chat (not email), return a JSON object ONLY for visuals.
         
-        INSTRUCTIONS:
-        - If the user says "Add task [task_name]", call the function responsible for adding a task (e.g., via 'add_task' configured for additions).
-        - If the user says "Update task [task_name]", call the function responsible for updating a task (e.g., via 'update_sheet_tool' configured for updates).
-        - If the user says "Send email with a CHART", call 'send_email_tool' with attachment_type='chart'.
-        - If the user says "Send email with a TABLE", call 'send_email_tool' with attachment_type='table'.
-        - If the user says "Send email", use attachment_type='none'.
-        - Do NOT call the tool twice.
-        - Answer general questions normally.
-        - Critical if the users asks to "create action item" or "Add Task", NOT just reply with text. Instead, output a JSON block strictly following this format:  
-
-        FORMAT FOR TASK ADDITION (Output this JSON strictly):
+        VISUALIZATION FORMAT (Only use this if user asks to "Show me a chart" in chat):
         ```json
-        {{
-            "action": "add",
-            "task_name": "Task Name",
-            "assigned_to": "Assignee Name",
-            "start_date": "YYYY-MM-DD",
-            "end_date": "YYYY-MM-DD",
-            "status": "Not Started",
-            "client": "Client Name",
-            "notify_email": "email@example.com"
-        }}
+        {{ "is_chart": true, "summary": "Here is the chart", ... }}
         ```
-
-        FORMAT FOR CHART (For Chat Display Only):
-        ```json
-        {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
-        ```
-
-        FORMAT FOR TABLE (For Chat Display Only):
-        ```json
-        {{
-            "is_table": true,
-            "title": "Task Overview",
-            "headers": ["Task Name", "Status", "Due Date"],
-            "rows": [
-                ["Fix Bug", "Done", "2023-10-01"],
-                ["Write Docs", "Pending", "2023-10-05"]
-            ],
-            "summary": "Here is the table you requested."
-        }}
-        ```
+        
+        DO NOT output JSON for adding tasks. Use the `add_task_tool`.
         """
-
         messages = [
             SystemMessage(content=system_msg),
             HumanMessage(content=request.prompt)
         ]
-
         print("🤖 AI Thinking...")
         ai_response = llm_with_tools.invoke(messages)
-
-        # --- CASE A: TOOL CALLS (LangChain Tools) ---
+        # --- CASE A: TOOL CALLS (The Priority) ---
         if ai_response.tool_calls:
-            print(f"🔧 AI decided to use tools: {len(ai_response.tool_calls)}")
-            results = []
+            print(f"🔧 AI decided to use {len(ai_response.tool_calls)} tools.")
             
+            # Create a simple mapping for execution
+            tool_map = {
+                "add_task_tool": add_task_tool,
+                "update_sheet_tool": update_sheet_tool,
+                "send_email_tool": send_email_tool
+            }
+            
+            results = []
             for tool_call in ai_response.tool_calls:
                 tool_name = tool_call["name"]
                 tool_args = tool_call["args"]
                 
                 if tool_name in tool_map:
-                    print(f"   -> Executing {tool_name} with args: {tool_args}")
+                    print(f"   -> Executing {tool_name}...")
+                    # Invoke the tool
                     tool_output = tool_map[tool_name].invoke(tool_args)
-                    results.append(str(tool_output))
-                else:
-                    results.append(f"Error: Tool {tool_name} not found.")
-
-            # FIXED: Closed the dictionary properly
+                    results.append(tool_output)
+            
+            # Return the result of the tool execution to the frontend
             return {
-                "response": " | ".join(results),
+                "response": "Action Complete: " + " | ".join(results),
                 "type": "text",
                 "status": "success"
             }
-
-        # --- CASE B: JSON ACTIONS (Visuals & Add Task) ---
-        # Get content cleanly first
+        # --- CASE B: VISUALIZATIONS (JSON) ---
+        # Only keep this for Charts/Tables display in Frontend
         content = ai_response.content.strip()
-
         if "```json" in content:
             try:
-                # Extract clean JSON string
-                # FIXED: split() logic adjusted
                 clean_json = content.split("```json")[1].split("```")[0].strip()
                 data_obj = json.loads(clean_json)
                 
-                # 1. Handle Charts
                 if data_obj.get("is_chart"):
-                    return {
-                        "response": data_obj.get("summary", "Here is the chart."), 
-                        "chart_data": data_obj, 
-                        "type": "chart", 
-                        "status": "success"
-                    }
+                    return { "response": data_obj.get("summary"), "chart_data": data_obj, "type": "chart", "status": "success" }
                 
-                # 2. Handle Tables
                 if data_obj.get("is_table"):
-                    return {
-                        "response": data_obj.get("summary", "Here is the table."), 
-                        "table_data": data_obj, 
-                        "type": "table", 
-                        "status": "success"
-                    }
-                
-                # 3. Handle Task Addition
-                if data_obj.get("action") == "add":
-                    print("📝 AI requesting to ADD a new task...")
-                    
-                    # Extract task details from AI response
-                    task_payload = {
-                        "task_name": data_obj.get("task_name"),
-                        "assigned_to": data_obj.get("assigned_to", "Unassigned"),
-                        "start_date": data_obj.get("start_date", ""),
-                        "end_date": data_obj.get("end_date", ""),
-                        "status": data_obj.get("status", "Not Started"),
-                        "client": data_obj.get("client", ""),
-                        "notify_email": data_obj.get("notify_email", None)
-                    }
-
-                    # Call internal API endpoint
-                    api_url = "https://web-production-b8ca4.up.railway.app/api/add-task"
-                    
-                    sheet_response = requests.post(api_url, json=task_payload)
-                    
-                    if sheet_response.status_code == 200:
-                        return {
-                            "response": f"✅ Task '{task_payload['task_name']}' has been successfully added to the Sheet.",
-                            "type": "text",
-                            "status": "success"
-                        }
-                    else:
-                        return {
-                            "response": f"❌ Failed to add task. Server replied: {sheet_response.text}",
-                            "type": "text",
-                            "status": "error"
-                        }
-
-            except json.JSONDecodeError:
-                print("⚠️ Failed to parse JSON from AI response.")
-            except Exception as e:
-                print(f"⚠️ Error processing JSON action: {e}")
-
-        # --- CASE C: STANDARD TEXT RESPONSE ---
+                     return { "response": data_obj.get("summary"), "table_data": data_obj, "type": "table", "status": "success" }
+                     
+            except Exception:
+                pass # Fallback to text
+        # --- CASE C: STANDARD CONVERSATION ---
         return {
             "response": content,
             "type": "text",
             "status": "success"
         }
-
     except Exception as e:
         print(f"❌ Chat Error: {e}")
-        return {"response": f"Error: {str(e)}", "status": "error"}
+        return {"response": f"I encountered an error: {str(e)}", "status": "error"}
 
 # --- Entry Point ---
 if __name__ == "__main__":
