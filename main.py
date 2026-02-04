@@ -240,7 +240,7 @@ def send_email_tool(to_email: str, subject: str, body: str, attachment_type: str
 #  CHAT AGENT (UPDATED) ---
 
 @app.post("/api/chat")
-def chat(request: PromptRequest):
+async def chat(request: PromptRequest):
     global excel_text_context
     print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
 
