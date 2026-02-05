@@ -236,7 +236,11 @@
         .catch((error) => {
             console.error("Fetch error:", error);
             const sb = document.getElementById("statusBar");
-            if (sb) sb.innerText = "❌ Offline - service not available";
+            if (sb) {
+        sb.innerText = "❌ Offline - service not available";
+    } else {
+        console.warn("Status bar element not found in the DOM");sb.innerText = "❌ Offline - service not available";
+            }
         });
 }
 
