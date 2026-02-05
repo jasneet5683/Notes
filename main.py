@@ -122,7 +122,7 @@ def check_deadlines_and_notify():
 # --- Lifecycle Events ---
 @app.on_event("startup")
 async def startup_event():
-     print("🚀 Server Starting...")
+    print("🚀 Server Starting...")
     """Runs when the server starts."""
     load_data_global() # Load initial context if needed
     
