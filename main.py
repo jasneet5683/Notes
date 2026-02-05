@@ -288,7 +288,7 @@ async def chat(request: PromptRequest):
             load_data_global()
             # Verify if reload worked
             if not excel_text_context:
-            print("❌ [CRITICAL] Reload failed. Context is still empty.")
+                print("❌ [CRITICAL] Reload failed. Context is still empty.")
         else:
         print("ℹ️ [DEBUG] Context exists. Skipping reload.")
     except Exception as e:
