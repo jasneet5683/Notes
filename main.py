@@ -275,47 +275,32 @@ def send_email_tool(to_email: str, subject: str, body: str, attachment_type: str
     return "Email sent successfully."
 
 #  CHAT AGENT (UPDATED) ---
-
+# UPDATE: Remove 'async' to prevent blocking the event loop with synchronous calls
 @app.post("/api/chat")
-async def chat(request: PromptRequest):
+def chat(request: PromptRequest):
     global excel_text_context
-    print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
+    print(f"🧐 Debug - Received Prompt: {request.prompt}")
+    
+    # 1. Reload Data (Safe to do here now that we removed 'async')
     load_data_global()
 
     try:
-        # 1. Reload data context if missing
-        if not excel_text_context:
-            print("⚠️  Context missing in this worker. Reloading...")
-            load_data_global()
-            # Verify if reload worked
-            if not excel_text_context:
-                print("❌ [CRITICAL] Reload failed. Context is still empty.")
-        else:
-            print("ℹ️ [DEBUG] Context exists. Skipping reload.")
-    except Exception as e:
-        print(f"❌ [DEBUG] Error in Reload Logic: {e}")   
-
-        # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
+        # 2. Safety Check: Ensure context exists
         current_context = excel_text_context if excel_text_context else "The sheet is currently empty."
-        print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
-
+        
         # 3. Bind Tools
-        # We add add_task_tool to the list
         tools = [add_task_tool, update_sheet_tool, send_email_tool]
-
-        # 1. Print what is about to be sent to the LLM
-        print("--- DEBUG: CONTEXT SENT TO AI ---")
-        print(excel_text_context) 
-        print("---------------------------------")
-
+        
         # 4. Initialize LLM
+        # Suggestion: Ensure Config.openai_key is valid
         llm = ChatOpenAI(
             model="gpt-4o", 
             openai_api_key=Config.openai_key,
-            temperature=0  # Keep 0 for strict adherence to facts
+            temperature=0
         )
         llm_with_tools = llm.bind_tools(tools)
-        # 5. New Strict System Prompt
+
+        # 5. System Prompt
         system_msg = f"""
         You are an advanced Project Manager Agent connected to a live Google Sheet.
         
@@ -323,31 +308,23 @@ async def chat(request: PromptRequest):
         {current_context}
         
         RULES:
-        1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET". If a task is not there, say "I cannot find that task." Do NOT invent tasks.
+        1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET".
         2. **Actions**: If the user wants to ADD, UPDATE, or EMAIL, you MUST call the appropriate tool.
-           - To add a task -> Call `add_task_tool`
-           - To update a task -> Call `update_sheet_tool`
-           - To send email -> Call `send_email_tool`
-        3. **Visuals**: If the user asks to *see* a chart or table in the chat (not email), return a JSON object ONLY for visuals.
-        
-        VISUALIZATION FORMAT (Only use this if user asks to "Show me a chart" in chat):
-        ```json
-        {{ "is_chart": true, "summary": "Here is the chart", ... }}
-        ```
-        
-        DO NOT output JSON for adding tasks. Use the `add_task_tool`.
+        3. **Visuals**: If the user asks to *see* a chart or table, return a JSON object ONLY for visuals.
         """
+        
         messages = [
             SystemMessage(content=system_msg),
             HumanMessage(content=request.prompt)
         ]
+
         print("🤖 AI Thinking...")
         ai_response = llm_with_tools.invoke(messages)
-        # --- CASE A: TOOL CALLS (The Priority) ---
+        
+        # --- CASE A: TOOL CALLS ---
         if ai_response.tool_calls:
             print(f"🔧 AI decided to use {len(ai_response.tool_calls)} tools.")
             
-            # Create a simple mapping for execution
             tool_map = {
                 "add_task_tool": add_task_tool,
                 "update_sheet_tool": update_sheet_tool,
@@ -361,19 +338,33 @@ async def chat(request: PromptRequest):
                 
                 if tool_name in tool_map:
                     print(f"   -> Executing {tool_name}...")
-                    # Invoke the tool
-                    tool_output = tool_map[tool_name].invoke(tool_args)
-                    results.append(tool_output)
+                    try:
+                        # Invoke the tool
+                        tool_output = tool_map[tool_name].invoke(tool_args)
+                        results.append(str(tool_output))
+                    except Exception as tool_err:
+                        error_msg = f"Tool {tool_name} failed: {str(tool_err)}"
+                        print(f"❌ {error_msg}")
+                        results.append(error_msg)
             
-            # Return the result of the tool execution to the frontend
             return {
                 "response": "Action Complete: " + " | ".join(results),
                 "type": "text",
                 "status": "success"
             }
-        # --- CASE B: VISUALIZATIONS (JSON) ---
-        # Only keep this for Charts/Tables display in Frontend
+
+        # --- CASE B: STANDARD CONVERSATION & VISUALS ---
+        # IMPORTANT: Check if content is None (common if AI gets confused or errors out)
+        if not ai_response.content:
+            return {
+                "response": "I processed the request but have no content to show. Please check the logs.", 
+                "status": "success", 
+                "type": "text"
+            }
+
         content = ai_response.content.strip()
+        
+        # Check for JSON Visuals
         if "```json" in content:
             try:
                 clean_json = content.split("```json")[1].split("```")[0].strip()
@@ -384,18 +375,21 @@ async def chat(request: PromptRequest):
                 
                 if data_obj.get("is_table"):
                      return { "response": data_obj.get("summary"), "table_data": data_obj, "type": "table", "status": "success" }
-                     
-            except Exception:
-                pass # Fallback to text
-        # --- CASE C: STANDARD CONVERSATION ---
+            except json.JSONDecodeError:
+                print("⚠️ Failed to parse JSON from AI response.")
+                # Fallback to returning the raw text if JSON fails
+                pass 
+
         return {
             "response": content,
             "type": "text",
             "status": "success"
         }
+
     except Exception as e:
         print(f"❌ Chat Error: {e}")
-        return {"response": f"I encountered an error: {str(e)}", "status": "error"}
+        # Return the error to the frontend so you can see it in the UI
+        return {"response": f"System Error: {str(e)}", "status": "error"}
 
 # --- Entry Point ---
 if __name__ == "__main__":
