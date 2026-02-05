@@ -290,9 +290,9 @@ async def chat(request: PromptRequest):
             if not excel_text_context:
                 print("❌ [CRITICAL] Reload failed. Context is still empty.")
         else:
-        print("ℹ️ [DEBUG] Context exists. Skipping reload.")
+            print("ℹ️ [DEBUG] Context exists. Skipping reload.")
     except Exception as e:
-    print(f"❌ [DEBUG] Error in Reload Logic: {e}")   
+        print(f"❌ [DEBUG] Error in Reload Logic: {e}")   
 
         # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
         current_context = excel_text_context if excel_text_context else "The sheet is currently empty."
