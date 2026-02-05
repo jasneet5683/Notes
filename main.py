@@ -279,13 +279,21 @@ def send_email_tool(to_email: str, subject: str, body: str, attachment_type: str
 async def chat(request: PromptRequest):
     global excel_text_context
     print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
+    load_data_global()
 
     try:
         # 1. Reload data context if missing
-        if not document_loaded and not excel_text_context:
-            print("⚠️ Context missing in this worker. Reloading...")
+        if not excel_text_context:
+            print("⚠️  Context missing in this worker. Reloading...")
             load_data_global()
-            
+            # Verify if reload worked
+            if not excel_text_context:
+            print("❌ [CRITICAL] Reload failed. Context is still empty.")
+        else:
+        print("ℹ️ [DEBUG] Context exists. Skipping reload.")
+    except Exception as e:
+    print(f"❌ [DEBUG] Error in Reload Logic: {e}")   
+
         # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
         current_context = excel_text_context if excel_text_context else "The sheet is currently empty."
         print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
