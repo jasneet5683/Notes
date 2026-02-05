@@ -121,7 +121,8 @@ def check_deadlines_and_notify():
 
 # --- Lifecycle Events ---
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
+     print("🚀 Server Starting...")
     """Runs when the server starts."""
     load_data_global() # Load initial context if needed
     
@@ -247,10 +248,13 @@ async def chat(request: PromptRequest):
     try:
         # 1. Reload data context if missing
         if not document_loaded and not excel_text_context:
+            print("⚠️ Context missing in this worker. Reloading...")
             load_data_global()
             
         # 2. Check if context is actually empty (prevents hallucinating on empty sheet)
         current_context = excel_text_context if excel_text_context else "The sheet is currently empty."
+        print(f"🧐 Debug - Context passed to AI: {excel_text_context[:100] if excel_text_context else 'EMPTY'}")
+
         # 3. Bind Tools
         # We add add_task_tool to the list
         tools = [add_task_tool, update_sheet_tool, send_email_tool]
