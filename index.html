@@ -135,6 +135,37 @@
             margin-left: 10px;
             display: none;
         }
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+/* The small colored dot */
+.status-dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background-color: currentColor;
+}
+/* Online State (Green) */
+.status-badge.online {
+    background-color: #e6fffa;
+    color: #047857; /* Green text/dot */
+    border-color: #047857;
+}
+/* Offline State (Red) */
+.status-badge.offline {
+    background-color: #fff5f5;
+    color: #c53030; /* Red text/dot */
+    border-color: #c53030;
+}
     </style>
 </head>
 <body>
@@ -145,6 +176,11 @@
     </header>
     
     <div id="chat-window">
+<!-- Status Bar Container -->
+<div id="connection-status" class="status-badge offline">
+    <span class="status-dot"></span>
+    <span id="status-text">Offline</span>
+</div>
         <div class="message bot-message">
             Hello! I'm connected to your Google Sheet. You can ask me to add tasks, check deadlines, or send emails. How can I help?
         </div>
@@ -321,6 +357,50 @@
         });
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
+    const HEALTH_CHECK_URL = "https://notes-production-7134.up.railway.app"; 
+const statusBadge = document.getElementById('connection-status');
+const statusText = document.getElementById('status-text');
+async function checkBackendStatus() {
+    try {
+        // Attempt to fetch status from the backend
+        const response = await fetch(HEALTH_CHECK_URL);
+        // If the server responds with 200 OK
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Check specific logic if your backend returns { "status": "ok" }
+            // For now, we assume a successful response means we are online.
+            setOnline();
+        } else {
+            throw new Error('Server responded with an error');
+        }
+    } catch (error) {
+        // If fetch fails (network error, timeout, or backend down)
+        console.warn("Backend check failed:", error);
+        setOffline();
+    }
+}
+function setOnline() {
+    // Update UI to Green
+    if (statusBadge.classList.contains('offline')) {
+        statusBadge.classList.remove('offline');
+        statusBadge.classList.add('online');
+        statusText.innerText = "Online";
+    }
+}
+function setOffline() {
+    // Update UI to Red
+    if (statusBadge.classList.contains('online')) {
+        statusBadge.classList.remove('online');
+        statusBadge.classList.add('offline');
+        statusText.innerText = "Offline";
+    }
+}
+// 1. Check immediately on load
+window.addEventListener('load', checkBackendStatus);
+// 2. Poll every 5 seconds to keep status updated
+setInterval(checkBackendStatus, 5000);
+
 </script>
 
 </body>
