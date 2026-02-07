@@ -335,31 +335,31 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
     // ✅ FIXED: Better Health Check Logic
-    async function checkBackendStatus() {
-        try {
+    //async function checkBackendStatus() {
+    //    try {
             // We use the actual API endpoint with a dummy "ping" prompt
             // This ensures we aren't just hitting a 404 page
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: "ping_health_check_ignore_me" }) 
-            });
-            if (response.ok) {
-                setOnline();
-            } else {
+    //        const response = await fetch(`${API_BASE_URL}/api/chat`, {
+     //           method: 'POST',
+      //          headers: { 'Content-Type': 'application/json' },
+     //           body: JSON.stringify({ prompt: "ping_health_check_ignore_me" }) 
+      //      });
+      //      if (response.ok) {
+       //         setOnline();
+       //     } else {
                 // If it's a 405 or 422, the server is alive but didn't like the ping inputs.
                 // We can still consider that "Online" for connectivity purposes.
-                if(response.status === 422 || response.status === 405) {
-                     setOnline();
-                } else {
-                    throw new Error('Server returned error');
-                }
-            }
-        } catch (error) {
-            console.warn("Backend check failed:", error);
-            setOffline();
-        }
-    }
+       //         if(response.status === 422 || response.status === 405) {
+       //              setOnline();
+       //         } else {
+       //             throw new Error('Server returned error');
+       //         }
+       //     }
+       // } catch (error) {
+        //    console.warn("Backend check failed:", error);
+       //     setOffline();
+        //}
+    //}
     function setOnline() {
         if (statusBadge.classList.contains('offline')) {
             statusBadge.classList.remove('offline');
