@@ -302,7 +302,7 @@ def chat(request: PromptRequest):
 
         # 5. System Prompt
         # Note: Double curly braces {{ }} are used here so Python doesn't break the f-string.
-         system_msg = f"""
+        system_msg = f"""
         You are an advanced Project Manager Agent.
         
         CURRENT DATA CONTEXT:
