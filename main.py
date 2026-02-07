@@ -303,28 +303,30 @@ def chat(request: PromptRequest):
         # 5. System Prompt
         # Note: Double curly braces {{ }} are used here so Python doesn't break the f-string.
         system_msg = f"""
-        You are an advanced Project Manager Agent connected to a live Google Sheet.
-        CURRENT DATA IN SHEET:
-        {current_context}
-        RULES:
-        1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET".
-        2. **Actions**: If the user wants to ADD, UPDATE, or EMAIL, you MUST call the appropriate tool.
-        3. **Visuals**: If the user asks to *see* a chart or table, you must return a specific JSON object wrapped in markdown code blocks.
-        ---
-        ### VISUAL FORMATTING INSTRUCTIONS
-        **1. FOR CHARTS**
-        If the user wants a visualization, return this exact JSON structure:
-        ```json
-        {{
-            "is_chart": true,
-            "chart_type": "bar", 
-            "title": "Chart Title Here",
-            "data": {{
-                "labels": ["Label A", "Label B"],
-                "values": [10, 20]
-            }},
-            "summary": "A short sentence explaining what this chart shows."
-        }}
+            You are an advanced Project Manager Agent connected to a live Google Sheet.
+            CURRENT DATA IN SHEET:
+            {current_context}
+            RULES:
+            1. **Truthfulness**: Answer questions ONLY based on the "CURRENT DATA IN SHEET".
+            2. **Actions**: If the user wants to ADD, UPDATE, or EMAIL, you MUST call the appropriate tool.
+            3. **Visuals**: If the user asks to *see* a chart or table, you must return a specific JSON object wrapped in markdown code blocks.
+            ---
+            ### VISUAL FORMATTING INSTRUCTIONS
+            **1. FOR CHARTS**
+            If the user wants a visualization, return this exact JSON structure:
+            ```json
+            {{
+                "is_chart": true,
+                "chart_type": "bar", 
+                "title": "Chart Title Here",
+                "data": {{
+                    "labels": ["Label A", "Label B"],
+                    "values": [10, 20]
+                }},
+                "summary": "A short sentence explaining what this chart shows."
+            }}
+            ```
+        """
       
         messages = [
             SystemMessage(content=system_msg),
