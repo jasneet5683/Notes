@@ -195,31 +195,28 @@
 </div>
 
 <script>
-    // ⚠️ IMPORTANT: Replace this with your actual Railway URL 
-    // Example: const API_BASE_URL = "https://your-project.up.railway.app";
+  // ⚠️ IMPORTANT: Your Railway URL
     const API_BASE_URL = "https://notes-production-7134.up.railway.app"; 
-
     const chatWindow = document.getElementById('chat-window');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const loader = document.getElementById('loader');
-
+    
+    // Status Elements
+    const statusBadge = document.getElementById('connection-status');
+    const statusText = document.getElementById('status-text');
     // Handle Enter Key
     userInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') handleSend();
     });
-
     sendBtn.addEventListener('click', handleSend);
-
     async function handleSend() {
         const text = userInput.value.trim();
         if (!text) return;
-
         // 1. Add User Message
         addMessage(text, 'user');
         userInput.value = '';
         setLoading(true);
-
         try {
             // 2. Call your Python Backend
             const response = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -229,52 +226,41 @@
                 },
                 body: JSON.stringify({ prompt: text })
             });
-
             if (!response.ok) {
                 throw new Error("Network response was not ok");
             }
-
             const data = await response.json();
-
-            // 3. Handle Response Types based on your Python code structure
-            // Your Python returns: { response: "...", type: "...", status: "..." }
+            // 3. Handle Response Types
             
-            // Always show the text response first
+            // Text response
             if (data.response) {
                 addMessage(data.response, 'bot');
             }
-
-            // If it's a table
+            // Table response
             if (data.type === 'table' && data.table_data) {
                 renderTable(data.table_data);
             }
-
-            // If it's a chart
+            // Chart response
             if (data.type === 'chart' && data.chart_data) {
                 renderChart(data.chart_data);
             }
-
         } catch (error) {
             console.error(error);
             addMessage("❌ Error: Could not connect to the backend.", 'bot');
+            setOffline(); // Update status if call fails
         } finally {
             setLoading(false);
         }
     }
-
     // UI Helper: Add Message Bubble
     function addMessage(htmlContent, sender) {
         const div = document.createElement('div');
         div.classList.add('message');
         div.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-        
-        // Allow basic HTML in bot responses (bolding, line breaks)
-        div.innerHTML = htmlContent.replace(/\n/g, '<br>');
-        
+        div.innerHTML = htmlContent.replace(/\n/g, '<br>'); // preserve line breaks
         chatWindow.appendChild(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-
     // UI Helper: Toggle Loading
     function setLoading(isLoading) {
         loader.style.display = isLoading ? 'block' : 'none';
@@ -282,12 +268,9 @@
         sendBtn.disabled = isLoading;
         if (!isLoading) userInput.focus();
     }
-
     // Renderer: Table
     function renderTable(tableData) {
-        // Expecting tableData to have { headers: [], rows: [] }
         if (!tableData.headers || !tableData.rows) return;
-
         const table = document.createElement('table');
         
         // Header
@@ -300,7 +283,6 @@
         });
         thead.appendChild(trHead);
         table.appendChild(thead);
-
         // Body
         const tbody = document.createElement('tbody');
         tableData.rows.forEach(row => {
@@ -313,19 +295,15 @@
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-
-        // Wrap table in a message bubble
         const div = document.createElement('div');
         div.classList.add('message', 'bot-message');
-        div.style.maxWidth = "95%"; // Allow tables to be wider
+        div.style.maxWidth = "95%";
         div.appendChild(table);
         chatWindow.appendChild(div);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-
     // Renderer: Chart
     function renderChart(chartData) {
-        // Create a canvas element
         const canvasContainer = document.createElement('div');
         canvasContainer.classList.add('message', 'bot-message');
         canvasContainer.style.width = "100%";
@@ -333,23 +311,22 @@
         const canvas = document.createElement('canvas');
         canvasContainer.appendChild(canvas);
         chatWindow.appendChild(canvasContainer);
-
-        // Initialize Chart.js
-        // Assuming your Python backend sends { type: 'bar', data: { labels: [], datasets: [] } }
-        // We adapt based on the 'summary' or generic structure
+        // ✅ FIXED: Handle variations in backend variable names
         new Chart(canvas, {
-            type: chartData.type || 'bar', 
+            type: chartData.chart_type || chartData.type || 'bar', 
             data: {
                 labels: chartData.labels || [], 
                 datasets: [{
-                    label: chartData.title || 'Data',
-                    data: chartData.values || [],
+                    label: chartData.title || 'Data Analysis',
+                    // Check for 'values' OR 'data' to be safe
+                    data: chartData.values || chartData.data || [],
                     backgroundColor: 'rgba(74, 144, 226, 0.6)',
                     borderColor: 'rgba(74, 144, 226, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
+                responsive: true,
                 scales: {
                     y: { beginAtZero: true }
                 }
@@ -357,50 +334,50 @@
         });
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-    const HEALTH_CHECK_URL = "https://notes-production-7134.up.railway.app"; 
-const statusBadge = document.getElementById('connection-status');
-const statusText = document.getElementById('status-text');
-async function checkBackendStatus() {
-    try {
-        // Attempt to fetch status from the backend
-        const response = await fetch(HEALTH_CHECK_URL);
-        // If the server responds with 200 OK
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Check specific logic if your backend returns { "status": "ok" }
-            // For now, we assume a successful response means we are online.
-            setOnline();
-        } else {
-            throw new Error('Server responded with an error');
+    // ✅ FIXED: Better Health Check Logic
+    async function checkBackendStatus() {
+        try {
+            // We use the actual API endpoint with a dummy "ping" prompt
+            // This ensures we aren't just hitting a 404 page
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: "ping_health_check_ignore_me" }) 
+            });
+            if (response.ok) {
+                setOnline();
+            } else {
+                // If it's a 405 or 422, the server is alive but didn't like the ping inputs.
+                // We can still consider that "Online" for connectivity purposes.
+                if(response.status === 422 || response.status === 405) {
+                     setOnline();
+                } else {
+                    throw new Error('Server returned error');
+                }
+            }
+        } catch (error) {
+            console.warn("Backend check failed:", error);
+            setOffline();
         }
-    } catch (error) {
-        // If fetch fails (network error, timeout, or backend down)
-        console.warn("Backend check failed:", error);
-        setOffline();
     }
-}
-function setOnline() {
-    // Update UI to Green
-    if (statusBadge.classList.contains('offline')) {
-        statusBadge.classList.remove('offline');
-        statusBadge.classList.add('online');
-        statusText.innerText = "Online";
+    function setOnline() {
+        if (statusBadge.classList.contains('offline')) {
+            statusBadge.classList.remove('offline');
+            statusBadge.classList.add('online');
+            statusText.innerText = "Online";
+        }
     }
-}
-function setOffline() {
-    // Update UI to Red
-    if (statusBadge.classList.contains('online')) {
-        statusBadge.classList.remove('online');
-        statusBadge.classList.add('offline');
-        statusText.innerText = "Offline";
+    function setOffline() {
+        if (statusBadge.classList.contains('online')) {
+            statusBadge.classList.remove('online');
+            statusBadge.classList.add('offline');
+            statusText.innerText = "Offline";
+        }
     }
-}
-// 1. Check immediately on load
-window.addEventListener('load', checkBackendStatus);
-// 2. Poll every 5 seconds to keep status updated
-setInterval(checkBackendStatus, 5000);
-
+    // Initialize
+    window.addEventListener('load', checkBackendStatus);
+    setInterval(checkBackendStatus, 10000); // Check every 10 seconds
+</script>
 </script>
 
 </body>
