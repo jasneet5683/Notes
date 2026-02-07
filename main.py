@@ -319,9 +319,7 @@ def chat(request: PromptRequest):
                 "is_chart": true,
                 "chart_type": "bar", 
                 "title": "Chart Title Here",
-                "data": {{
-                    "labels": ["Label A", "Label B"],
-                    "values": [10, 20]
+                "data_source": "latest_sheet_data"
                 }},
                 "summary": "A short sentence explaining what this chart shows."
             }}
