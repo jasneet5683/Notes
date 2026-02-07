@@ -325,8 +325,7 @@ def chat(request: PromptRequest):
             }},
             "summary": "A short sentence explaining what this chart shows."
         }}
-
-        
+      
         messages = [
             SystemMessage(content=system_msg),
             HumanMessage(content=request.prompt)
