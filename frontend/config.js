@@ -1,10 +1,11 @@
 // Configuration file for API endpoints and settings
 const CONFIG = {
-    // Update this URL with your Railway deployment URL
-    API_BASE_URL: process.env.REACT_APP_API_URL || "https://notes-production-7134.up.railway.api",
-
+    // Direct URL - no environment variables in browser
+    API_BASE_URL: "https://notes-production-7134.up.railway.app",
+    
     REFRESH_INTERVAL: 5000, // ms
     TIMEOUT: 10000, // ms
+    
     // Feature flags
     FEATURES: {
         CHAT_ENABLED: true,
@@ -28,9 +29,6 @@ const CONFIG = {
     }
 };
 
-// Export for use in other files
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
-}
-// Export for use in other files
-window.CONFIG = CONFIG; // Make globally available in browser
+// Make globally available for other scripts
+window.CONFIG = CONFIG;
+console.log('✅ CONFIG initialized:', CONFIG.API_BASE_URL);
