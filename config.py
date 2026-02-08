@@ -2,49 +2,42 @@ import os
 import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from dataclasses import dataclass
+from typing import Optional
 
-class Config:
-    # API Keys
-    openai_key = os.getenv("OPENAI_API_KEY")
-    BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-    
-    # Email Settings
-    SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-    SENDER_NAME = os.getenv("SENDER_NAME", "AI Assistant")
-    
-    # Google Sheets Settings
-    GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
-    GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDS")  # Stored as a raw JSON string in Railway
-    SHEET_NAME = "Task_Manager"  # Make sure this matches your Google Sheet Name exactly
 
-    @staticmethod
-    def get_google_sheet():
-        """
-        Connects to Google Sheets using credentials stored in the environment variable.
-        Parses the JSON string directly.
-        """
-        if not Config.GOOGLE_CREDS_JSON:
-            print("Error: GOOGLE_CREDS environment variable is missing.")
-            return None
+def _require(name: str) -> str:
+    v = os.getenv(name)
+    if not v:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return v
 
-        try:
-            # Parse the JSON string from the environment variable
-            creds_dict = json.loads(Config.GOOGLE_CREDS_JSON)
-            
-            scope = [
-                "https://spreadsheets.google.com/feeds", 
-                "https://www.googleapis.com/auth/drive"
-            ]
-            
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-            client = gspread.authorize(creds)
-            return client.open(Config.SHEET_NAME).sheet1
-            # Open the sheet by ID
-            #return client.open_by_key(Config.GOOGLE_SHEET_ID).sheet1
 
-        except json.JSONDecodeError:
-            print("Error: The text in GOOGLE_CREDS is not valid JSON.")
-            return None
-        except Exception as e:
-            print(f"Error connecting to Google Sheets: {e}")
-            return None
+@dataclass(frozen=True)
+class Settings:
+    sheet_name: str
+    google_service_account_json: dict
+    openai_api_key: Optional[str]
+    cors_allow_origins: list[str]
+
+
+def load_settings() -> Settings:
+    sheet_name = os.getenv("SHEET_NAME", "Task_Manager")
+
+    sa_raw = _require("GOOGLE_SERVICE_ACCOUNT_JSON")
+    try:
+        google_service_account_json = json.loads(sa_raw)
+    except json.JSONDecodeError as e:
+        raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON must be valid JSON") from e
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+
+    cors_allow_origins = os.getenv("CORS_ALLOW_ORIGINS", "*")
+    origins = [o.strip() for o in cors_allow_origins.split(",")] if cors_allow_origins else ["*"]
+
+    return Settings(
+        sheet_name=sheet_name,
+        google_service_account_json=google_service_account_json,
+        openai_api_key=openai_api_key,
+        cors_allow_origins=origins,
+    )
