@@ -16,7 +16,7 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Project Status Chat Agent")
 
-# CORS configuration for frontend communication
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,22 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============= GOOGLE SHEETS SETUP =============
-#scope = [
-#    "https://spreadsheets.google.com/feeds",
-#    "https://www.googleapis.com/auth/drive"
-#]
-
-#try:
-#    creds = ServiceAccountCredentials.from_json_keyfile_name(
-#        "credentials.json", 
-#        scope
-#    )
-#    gs_client = gspread.authorize(creds)
-#    sheet = gs_client.open("Task_Manager").sheet1
-#except Exception as e:
-#    print(f"Error connecting to Google Sheets: {e}")
-
+# ============= GLOBAL SHEET VARIABLE (CRITICAL) =============
 sheet = None
 
 # ============= OPENAI SETUP =============
@@ -66,47 +51,53 @@ class TaskUpdate(BaseModel):
 
 # ============= HELPER FUNCTIONS =============
 def get_google_sheet():
+    """Initialize and return Google Sheet connection"""
+    global sheet  # CRITICAL: Declare global to modify the module-level variable
+    
     try:
-        # Fetch credentials from environment variable
         json_creds = os.getenv("GOOGLE_CREDENTIALS")
         
         if not json_creds:
-            print("❌ Error: GOOGLE_CREDENTIALS environment variable not found")
+            print("❌ GOOGLE_CREDENTIALS environment variable not found")
             return None
         
-        # Parse JSON string into dictionary
         creds_dict = json.loads(json_creds)
-        
-        # Define required scopes
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # Use the correct method: from_json_keyfile_dict
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scopes=scope)
-        client = gspread.authorize(creds)
+        gs_client = gspread.authorize(creds)
+        sheet = gs_client.open("Task_Manager").sheet1
         
-        # Open your spreadsheet (ensure exact name match)
-        return client.open("Task_Manager").sheet1
+        print("✅ Google Sheets connection established!")
+        return sheet
         
     except json.JSONDecodeError:
-        print("❌ Error: GOOGLE_CREDENTIALS is not valid JSON")
+        print("❌ GOOGLE_CREDENTIALS is not valid JSON")
         return None
     except Exception as e:
         print(f"❌ Connection Error: {e}")
         return None
 
 def fetch_all_tasks():
-    """Fetch all tasks from Google Sheet and return as list of dicts"""
+    """Fetch all tasks from Google Sheet"""
+    global sheet  # CRITICAL: Access the global variable
+    
     try:
         if sheet is None:
-            raise Exception("Google Sheets connection not initialized")
+            print("🔄 Initializing Google Sheets connection...")
+            sheet = get_google_sheet()
+            if sheet is None:
+                return []
         
         records = sheet.get_all_records()
+        print(f"✅ Fetched {len(records)} tasks")
         return records
+        
     except Exception as e:
-        print(f"Error fetching tasks: {e}")
+        print(f"❌ Error fetching tasks: {e}")
         return []
 
 def format_tasks_for_context(tasks):
@@ -126,7 +117,7 @@ def format_tasks_for_context(tasks):
     return formatted
 
 def generate_ai_response(user_message, tasks_context, conversation_history):
-    """Generate intelligent response using OpenAI"""
+    """Generate response using OpenAI"""
     system_prompt = f"""You are an intelligent project status assistant. Your role is to:
 1. Provide clear, concise updates about project status
 2. Answer questions about specific tasks
@@ -134,27 +125,22 @@ def generate_ai_response(user_message, tasks_context, conversation_history):
 4. Suggest next steps or recommendations
 5. Maintain a professional and helpful tone
 
-You have access to the following project information:
-{tasks_context}
+Project Information:
+{tasks_context}"""
 
-Based on this data and user inquiries, provide insightful responses."""
-
-    # Build message history for context
     messages = [{"role": "system", "content": system_prompt}]
     
-    # Add previous conversation history if provided
-    for msg in conversation_history[-6:]:  # Keep last 6 messages for context
+    for msg in conversation_history[-6:]:
         messages.append({
             "role": msg.get("role", "user"),
             "content": msg.get("content", "")
         })
     
-    # Add current user message
     messages.append({"role": "user", "content": user_message})
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=messages,
             temperature=0.7,
             max_tokens=500
@@ -163,13 +149,21 @@ Based on this data and user inquiries, provide insightful responses."""
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
-# ============= API ENDPOINTS =============
+# ============= STARTUP EVENT =============
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Google Sheets on app startup"""
+    print("🚀 Starting Project Status Chat Agent...")
+    global sheet
+    sheet = get_google_sheet()
 
+# ============= API ENDPOINTS =============
 @app.get("/")
 def root():
     """Health check endpoint"""
     return {
         "status": "online",
+        "sheets_connected": sheet is not None,
         "message": "Project Status Chat Agent is running",
         "timestamp": datetime.now().isoformat()
     }
@@ -180,13 +174,13 @@ def get_all_tasks():
     tasks = fetch_all_tasks()
     return {
         "count": len(tasks),
-        "tasks": tasks,
+        "tasks": tasks[:10],
         "timestamp": datetime.now().isoformat()
     }
 
 @app.get("/api/status-summary")
 def get_status_summary():
-    """Get a quick summary of project status"""
+    """Get project status summary"""
     tasks = fetch_all_tasks()
     
     if not tasks:
@@ -205,21 +199,11 @@ def get_status_summary():
 
 @app.post("/api/chat")
 async def chat_with_agent(request: ChatRequest):
-    """
-    Main chat endpoint for project status inquiries
-    
-    Example prompts:
-    - "What's the current project status?"
-    - "Which tasks are overdue?"
-    - "Tell me about tasks assigned to John"
-    - "What are the blockers?"
-    """
+    """Main chat endpoint"""
     try:
-        # Fetch latest tasks
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
         
-        # Generate AI response
         ai_response = generate_ai_response(
             request.user_message,
             tasks_context,
@@ -237,10 +221,14 @@ async def chat_with_agent(request: ChatRequest):
 
 @app.post("/api/add-task")
 def add_task(task: TaskInput):
-    """Add a new task to the Google Sheet"""
+    """Add a new task to Google Sheet"""
+    global sheet
+    
     try:
         if sheet is None:
-            raise Exception("Google Sheets not connected")
+            sheet = get_google_sheet()
+            if sheet is None:
+                raise Exception("Google Sheets connection failed")
         
         new_row = [
             task.task_name,
@@ -266,16 +254,19 @@ def add_task(task: TaskInput):
 
 @app.put("/api/update-task")
 def update_task_status(update: TaskUpdate):
-    """Update the status of an existing task"""
+    """Update task status"""
+    global sheet
+    
     try:
         if sheet is None:
-            raise Exception("Google Sheets not connected")
+            sheet = get_google_sheet()
+            if sheet is None:
+                raise Exception("Google Sheets connection failed")
         
-        # Find and update task
         tasks = sheet.get_all_records()
-        for i, task in enumerate(tasks, 2):  # Start from 2 (row 1 is header)
+        for i, task in enumerate(tasks, 2):
             if task.get("Task Name") == update.task_name:
-                sheet.update_cell(i, 5, update.new_status)  # Assuming Status is column 5
+                sheet.update_cell(i, 5, update.new_status)
                 return {
                     "message": f"Task '{update.task_name}' updated to '{update.new_status}'",
                     "status": "success"
