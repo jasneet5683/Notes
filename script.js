@@ -1,199 +1,297 @@
-// ✅ Corrected API configuration
-const API_BASE_URL = 'https://web-production-b8ca4.up.railway.app';
+import { API_BASE_URL } from './config.js';
 
-// 📥 Load all tasks from backend
-async function loadTasks() {
-    console.log('🔄 Fetching tasks from Railway backend...');
-    
+// Global state
+let conversationHistory = [];
+
+// 🔍 1. HEALTH CHECK ENDPOINT
+async function checkHealth() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/tasks`);
+        const response = await fetch(`${API_BASE_URL}/health`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
+        const healthElement = document.getElementById('healthStatus');
+        healthElement.textContent = `✅ ${data.service} - ${data.status.toUpperCase()}`;
+        healthElement.className = 'health-indicator health-online';
         
-        const tasks = await response.json();
-        console.log('✅ Tasks received:', tasks);
-        displayTasks(tasks);
-        
+        console.log('Health check:', data);
+        return true;
     } catch (error) {
-        console.error('❌ Failed to load tasks:', error);
-        displayError('Unable to connect to backend. Check if Railway is running.');
+        console.error('Health check failed:', error);
+        const healthElement = document.getElementById('healthStatus');
+        healthElement.textContent = '❌ API OFFLINE - Check network connection';
+        healthElement.className = 'health-indicator health-offline';
+        return false;
     }
 }
 
-// 📊 Render tasks in UI with correct field mapping
-function displayTasks(tasks) {
-    const container = document.getElementById('tasks-container');
-    
-    if (!container) {
-        console.error('❌ Element "tasks-container" not found in HTML');
-        return;
+// 📊 2. GET PROJECT SUMMARY
+async function getSummary() {
+    try {
+        document.getElementById('summaryDisplay').innerHTML = '<div class="loading">🔄 Generating AI summary...</div>';
+        
+        const response = await fetch(`${API_BASE_URL}/summary`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        document.getElementById('summaryDisplay').innerHTML = 
+            `<div class="summary-box">
+                <h3>🧠 AI Project Summary</h3>
+                <p>${data.summary}</p>
+                <small>Generated: ${new Date(data.timestamp).toLocaleString()}</small>
+            </div>`;
+    } catch (error) {
+        console.error('Summary error:', error);
+        document.getElementById('summaryDisplay').innerHTML = 
+            '<div class="error">❌ Failed to generate summary. Check API connection.</div>';
     }
-    
-    if (!tasks || tasks.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">📭 No tasks yet</p>';
-        return;
-    }
-    
-    // Map backend fields to display names
-    container.innerHTML = tasks.map(task => `
-        <div class="task-card" style="
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-            border: 1px solid #d4dce9;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        ">
-            <h3 style="margin: 0 0 15px 0; color: #1a202c;">📋 ${task.task_name || 'Unnamed'}</h3>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
-                <div>
-                    <strong style="color: #64748b;">👤 Assigned To</strong><br>
-                    <span style="color: #334155;">${task.assigned_to || '—'}</span>
-                </div>
-                
-                <div>
-                    <strong style="color: #64748b;">🏢 Client</strong><br>
-                    <span style="color: #334155;">${task.client || '—'}</span>
-                </div>
-                
-                <div>
-                    <strong style="color: #64748b;">📅 Start Date</strong><br>
-                    <span style="color: #334155;">${task.start_date || '—'}</span>
-                </div>
-                
-                <div>
-                    <strong style="color: #64748b;">📍 Status</strong><br>
-                    <span style="
-                        display: inline-block;
-                        background: ${getStatusColor(task.status)};
-                        color: white;
-                        padding: 4px 12px;
-                        border-radius: 20px;
-                        font-size: 12px;
-                        font-weight: 600;
-                    ">${task.status || 'Pending'}</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
 }
 
-// 🎨 Color coding for status
-function getStatusColor(status) {
-    const colors = {
-        'Completed': '#10b981',
-        'In Progress': '#f59e0b',
-        'Pending': '#6366f1',
-        'On Hold': '#ef4444'
+// 📋 3. GET ALL TASKS
+async function loadAllTasks() {
+    try {
+        document.getElementById('taskList').innerHTML = '<div class="loading">🔄 Loading all tasks...</div>';
+        
+        const response = await fetch(`${API_BASE_URL}/tasks`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        console.log('Loaded tasks:', data);
+        
+        if (data.tasks && data.tasks.length > 0) {
+            document.getElementById('taskList').innerHTML = `
+                <div style="margin-bottom: 15px; color: #666;">
+                    📊 Total Tasks: <strong>${data.count}</strong> | Last Updated: ${new Date(data.timestamp).toLocaleString()}
+                </div>
+                ${data.tasks.map(task => createTaskCard(task)).join('')}
+            `;
+        } else {
+            document.getElementById('taskList').innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
+        }
+    } catch (error) {
+        console.error('Load tasks error:', error);
+        document.getElementById('taskList').innerHTML = '<div class="error">❌ Failed to load tasks. Check API connection.</div>';
+    }
+}
+
+// 🆕 4. CREATE TASK (POST)
+document.getElementById('taskForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const taskData = {
+        task_name: document.getElementById('taskName').value.trim(),
+        assigned_to: document.getElementById('assignedTo').value.trim(),
+        client: document.getElementById('client').value.trim() || 'Not specified',
+        start_date: document.getElementById('startDate').value || null,
+        end_date: document.getElementById('endDate').value || null,
+        status: document.getElementById('status').value,
+        notify_email: document.getElementById('notifyEmail').value.trim() || null
     };
-    return colors[status] || '#6b7280';
-}
-
-// ➕ Add new task
-async function addNewTask(event) {
-    event.preventDefault();
-    
-    // Get form values
-    const taskName = document.getElementById('taskName')?.value;
-    const assignedTo = document.getElementById('assignedTo')?.value;
-    const client = document.getElementById('client')?.value;
-    const startDate = document.getElementById('startDate')?.value;
-    const endDate = document.getElementById('endDate')?.value;
-    const status = document.getElementById('status')?.value || 'Pending';
-    
-    // Validate required fields
-    if (!taskName || !assignedTo) {
-        displayError('Task Name and Assigned To are required');
-        return;
-    }
-    
-    console.log('📤 Submitting task:', { taskName, assignedTo, client, startDate, endDate, status });
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/add-task`, {
+        const submitButton = e.target.querySelector('button');
+        submitButton.textContent = '⏳ Creating...';
+        submitButton.disabled = true;
+        
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                task_name: taskName,        // ✅ Matches backend field
-                assigned_to: assignedTo,    // ✅ Matches backend field
-                client: client,             // ✅ Matches backend field
-                start_date: startDate,      // ✅ Matches backend field
-                end_date: endDate,
-                status: status
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
         });
         
-        if (!response.ok) {
-            throw new Error(`Failed to add task: ${response.status}`);
-        }
-        
         const result = await response.json();
-        console.log('✅ Task added:', result);
         
-        // Clear form
-        document.querySelector('form')?.reset();
-        
-        // Reload tasks
-        await loadTasks();
-        displaySuccess('✅ Task added successfully!');
-        
+        if (response.ok) {
+            showNotification(result.message, 'success');
+            document.getElementById('taskForm').reset();
+            loadAllTasks(); // Refresh the task list
+        } else {
+            throw new Error(result.detail || 'Failed to create task');
+        }
     } catch (error) {
-        console.error('❌ Error adding task:', error);
-        displayError('Failed to add task. Check backend connection.');
-    }
-}
-
-// 🚨 Show error message
-function displayError(message) {
-    const container = document.getElementById('tasks-container');
-    if (container) {
-        container.innerHTML = `
-            <div style="
-                background: #fee2e2;
-                color: #dc2626;
-                padding: 20px;
-                border-radius: 8px;
-                border-left: 4px solid #dc2626;
-            ">
-                ❌ ${message}
-            </div>
-        `;
-    }
-}
-
-// ✅ Show success message
-function displaySuccess(message) {
-    const container = document.getElementById('tasks-container');
-    if (container) {
-        const alert = document.createElement('div');
-        alert.style.cssText = `
-            background: #dcfce7;
-            color: #16a34a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #16a34a;
-        `;
-        alert.textContent = message;
-        container.insertAdjacentElement('beforebegin', alert);
-        
-        setTimeout(() => alert.remove(), 3000);
-    }
-}
-
-// 🚀 Auto-load tasks when page opens
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 Page loaded, fetching tasks...');
-    loadTasks();
-    
-    // Attach form handler if exists
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', addNewTask);
+        console.error('Create task error:', error);
+        showNotification('❌ Failed to create task: ' + error.message, 'error');
+    } finally {
+        const submitButton = e.target.querySelector('button');
+        submitButton.textContent = '🚀 Create Task';
+        submitButton.disabled = false;
     }
 });
+
+// ✏️ 5. UPDATE TASK STATUS (PUT)
+async function updateTaskStatus(taskName, newStatus) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks/${encodeURIComponent(taskName)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_status: newStatus })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification(result.message, 'success');
+            loadAllTasks(); // Refresh to show updated status
+        } else {
+            throw new Error(result.detail || 'Failed to update task');
+        }
+    } catch (error) {
+        console.error('Update task error:', error);
+        showNotification('❌ Failed to update task: ' + error.message, 'error');
+    }
+}
+
+// 🔍 6. SEARCH TASKS
+async function searchTasks() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) {
+        showNotification('⚠️ Please enter a search term', 'error');
+        return;
+    }
+    
+    try {
+        document.getElementById('searchResults').innerHTML = '<div class="loading">🔍 Searching...</div>';
+        
+        const response = await fetch(`${API_BASE_URL}/tasks/search?query=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        console.log('Search results:', data);
+        
+        if (data.results && data.results.length > 0) {
+            document.getElementById('searchResults').innerHTML = `
+                <div style="margin-bottom: 15px; color: #666;">
+                    🔍 Found <strong>${data.count}</strong> results for "${data.query}"
+                </div>
+                ${data.results.map(task => createTaskCard(task)).join('')}
+            `;
+        } else {
+            document.getElementById('searchResults').innerHTML = 
+                `<div class="loading">🚫 No results found for "${query}". Try different keywords.</div>`;
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        document.getElementById('searchResults').innerHTML = '<div class="error">❌ Search failed. Check API connection.</div>';
+    }
+}
+
+// 🤖 7. CHAT WITH AI
+function sendChat(event) {
+    event.preventDefault();
+    
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message) return;
+    
+    const messagesDiv = document.getElementById('chatMessages');
+    
+    // Add user message
+    messagesDiv.innerHTML += `<div class="message user">👤 ${message}</div>`;
+    input.value = '';
+    
+    // Add loading indicator
+    const loadingId = 'loading_' + Date.now();
+    messagesDiv.innerHTML += `<div id="${loadingId}" class="message bot">🤖 Thinking...</div>`;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Send to API
+    fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_message: message,
+            conversation_history: conversationHistory
+        })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        // Remove loading message
+        document.getElementById(loadingId).remove();
+        
+        // Add AI response
+        messagesDiv.innerHTML += `<div class="message bot">🤖 ${data.response}</div>`;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // Update conversation history
+        conversationHistory.push(
+            { role: 'user', content: message },
+            { role: 'assistant', content: data.response }
+        );
+        
+        // Keep only last 10 messages to prevent payload getting too large
+        if (conversationHistory.length > 10) {
+            conversationHistory = conversationHistory.slice(-10);
+        }
+    })
+    .catch(error => {
+        console.error('Chat error:', error);
+        document.getElementById(loadingId).remove();
+        messagesDiv.innerHTML += `<div class="message bot">🤖 ❌ Sorry, I'm currently unavailable. Please try again later.</div>`;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+}
+
+// 🛠️ UTILITY FUNCTIONS
+
+function createTaskCard(task) {
+    return `
+        <div class="task-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #333;">${task.task_name}</h3>
+                <span class="status ${task.status?.toLowerCase().replace(' ', '-')}">${task.status}</span>
+            </div>
+            <p style="margin: 5px 0;"><strong>👤 Assigned to:</strong> ${task.assigned_to}</p>
+            <p style="margin: 5px 0;"><strong>🏢 Client:</strong> ${task.client || 'Not specified'}</p>
+            <p style="margin: 5px 0;"><strong>📧 Notify:</strong> ${task.notify_email || 'None'}</p>
+            <p style="margin: 5px 0;"><strong>📅 Duration:</strong> ${task.start_date || 'No start'} → ${task.end_date || 'No end'}</p>
+            <div style="margin-top: 15px;">
+                <label style="font-weight: 600;">Update Status:</label>
+                <select onchange="updateTaskStatus('${task.task_name}', this.value)" style="margin-top: 5px;">
+                    <option value="${task.status}" selected>Current: ${task.status}</option>
+                    <option value="Pending">📋 Pending</option>
+                    <option value="In Progress">⚡ In Progress</option>
+                    <option value="Completed">✅ Completed</option>
+                </select>
+            </div>
+        </div>
+    `;
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = type;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 1000;
+        padding: 15px 20px; border-radius: 8px; font-weight: 600;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
+}
+
+function clearTasksList() {
+    document.getElementById('taskList').innerHTML = '<div class="loading">📝 Task list cleared. Click "Refresh Tasks" to reload.</div>';
+}
+
+// 🚀 INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Notes App initialized');
+    console.log('🌐 API Base URL:', API_BASE_URL);
+    
+    checkHealth();
+    loadAllTasks();
+    getSummary();
+});
+
+// 🌐 GLOBAL FUNCTIONS (for onclick handlers)
+window.checkHealth = checkHealth;
+window.getSummary = getSummary;
+window.loadAllTasks = loadAllTasks;
+window.searchTasks = searchTasks;
+window.sendChat = sendChat;
+window.updateTaskStatus = updateTaskStatus;
+window.clearTasksList = clearTasksList;
