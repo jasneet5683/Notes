@@ -134,7 +134,22 @@
             </div>
             <div id="summaryDisplay"></div>
         </div>
-
+<!-- AI CHAT ASSISTANT -->
+        <div class="section">
+            <h2>🤖 AI Project Assistant</h2>
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message bot">👋 Hi! I'm your AI assistant. Ask me about your tasks, project status, or anything related to project management!</div>
+                </div>
+                <form id="chatForm" onsubmit="sendChat(event)">
+                    <div class="grid">
+                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
+                        <button type="submit">📤 Send Message</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    
         <!-- ADD NEW TASK -->
         <div class="section">
             <h2>➕ Create New Task</h2>
@@ -180,23 +195,8 @@
             </div>
             <div id="taskList" class="loading">Loading tasks...</div>
         </div>
-
-        <!-- AI CHAT ASSISTANT -->
-        <div class="section">
-            <h2>🤖 AI Project Assistant</h2>
-            <div class="chat-container">
-                <div id="chatMessages" class="chat-messages">
-                    <div class="message bot">👋 Hi! I'm your AI assistant. Ask me about your tasks, project status, or anything related to project management!</div>
-                </div>
-                <form id="chatForm" onsubmit="sendChat(event)">
-                    <div class="grid">
-                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
-                        <button type="submit">📤 Send Message</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+</div>
+        
 
     <script type="module" src="script.js"></script>
 </body>
