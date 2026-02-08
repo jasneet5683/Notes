@@ -1,0 +1,293 @@
+/* ============================================
+   GLOBAL STYLES & RESET
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-primary: #667eea;
+    --color-primary-dark: #764ba2;
+    --color-success: #6BCF7F;
+    --color-warning: #FFD93D;
+    --color-danger: #FF6B6B;
+    --color-info: #3B82F6;
+    
+    --color-bg: #F7FAFC;
+    --color-surface: #FFFFFF;
+    --color-text: #2D3748;
+    --color-text-secondary: #718096;
+    --color-border: #E2E8F0;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.15);
+    
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* ============================================
+   CONTAINER & LAYOUT
+   ============================================ */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.header {
+    background: var(--color-surface);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.logo-section h1 {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+/* ============================================
+   STATUS INDICATOR
+   ============================================ */
+
+.status-indicator {
+    font-size: 20px;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    background: var(--color-bg);
+    font-weight: 600;
+    min-width: 150px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.status-online {
+    color: var(--color-success);
+}
+
+.status-offline {
+    color: var(--color-danger);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ============================================
+   PANELS
+   ============================================ */
+
+.panel {
+    background: var(--color-surface);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+}
+
+.panel:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.panel h2 {
+    font-size: 20px;
+    color: var(--color-text);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+/* ============================================
+   CHAT INTERFACE
+   ============================================ */
+
+.chat-box {
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    background: var(--color-bg);
+}
+
+.chat-box::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.chat-box::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+}
+
+.message {
+    margin-bottom: 12px;
+    padding: 12px 15px;
+    border-radius: var(--border-radius);
+    word-wrap: break-word;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-message {
+    background: var(--color-primary);
+    color: white;
+    margin-left: 20px;
+    text-align: right;
+}
+
+.ai-message {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-left: 3px solid var(--color-primary);
+    margin-right: 20px;
+}
+
+.message-content {
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message-time {
+    font-size: 11px;
+    opacity: 0.7;
+    display: block;
+    margin-top: 5px;
+}
+
+/* ============================================
+   INPUT & FORMS
+   ============================================ */
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.input-field {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+select.input-field {
+    cursor: pointer;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input[type="date"] {
+    padding: 10px;
+    border
