@@ -9,31 +9,40 @@ let autoRefreshInterval = null;
 /**
  * Initialize application on page load
  */
+document.addEventListener('DOMContentLoaded', initializeApp);
 async function initializeApp() {
-    if (isInitialized) return;
-    isInitialized = true;
-
-    console.log("🚀 Initializing application...");
-
+    console.log('🚀 Initializing application...');
     try {
-        // Check backend health
-        await updateHealthStatus();
-
-        // Load initial data
-        await loadTasks();
-
-        // Set up auto-refresh
+        // Step 1: Verify CONFIG exists
+        if (!window.CONFIG) {
+            throw new Error('CONFIG not loaded. Check script order in HTML.');
+        }
+        console.log('✓ CONFIG loaded');
+        // Step 2: Verify API exists
+        if (!window.api) {
+            throw new Error('API not loaded. Check script order in HTML.');
+        }
+        console.log('✓ API loaded');
+        // Step 3: Health check
+        const isHealthy = await window.api.healthCheck();
+        updateHealthStatus(isHealthy);
+        
+        if (!isHealthy) {
+            console.warn('⚠️ Backend is unavailable. Some features may not work.');
+        }
+        // Step 4: Load tasks
+        const tasks = await window.api.fetchTasks();
+        loadTasks(tasks);
+        console.log('✓ Tasks loaded');
+        // Step 5: Setup auto-refresh
         setupAutoRefresh();
-
-        // Attach event listeners
-        setupEventListeners();
-
-        Utils.showNotification("✅ Application ready!", "success", 2000);
+        console.log('✓ Auto-refresh enabled');
     } catch (error) {
-        console.error("Initialization error:", error);
-        Utils.showNotification("⚠️ Failed to initialize application", "error");
+        console.error('❌ Initialization error:', error.message);
+        displayErrorUI('Failed to initialize. Please refresh the page.');
     }
 }
+
 
 /**
  * Update health status indicator
