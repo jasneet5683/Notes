@@ -154,3 +154,4 @@ if (window.CONFIG && window.CONFIG.API_BASE_URL) {
     console.error('❌ CONFIG not found. Check config.js is loaded first.');
 }
 
+console.log('✅ api.js loaded, API instance:', window.api);
