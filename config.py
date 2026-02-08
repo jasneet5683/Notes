@@ -7,6 +7,9 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GOOGLE_SHEETS_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "your-default-id")
+SHEET_NAME = "Task_Manager"
+CREDENTIALS_ENV_VAR = "GOOGLE_CREDENTIALS"
+
 
 # API Configuration
 API_TITLE = "Project Status Chat Agent"
