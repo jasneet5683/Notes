@@ -40,7 +40,8 @@ app.add_middleware(
 #    sheet = gs_client.open("Task_Manager").sheet1
 #except Exception as e:
 #    print(f"Error connecting to Google Sheets: {e}")
-#    sheet = None
+
+sheet = None
 
 # ============= OPENAI SETUP =============
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
