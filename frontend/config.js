@@ -32,3 +32,5 @@ const CONFIG = {
 // Make globally available for other scripts
 window.CONFIG = CONFIG;
 console.log('✅ CONFIG initialized:', CONFIG.API_BASE_URL);
+
+console.log('✅ config.js loaded:', window.CONFIG);
