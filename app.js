@@ -9,39 +9,36 @@ let autoRefreshInterval = null;
 /**
  * Initialize application on page load
  */
-document.addEventListener('DOMContentLoaded', initializeApp);
+//document.addEventListener('DOMContentLoaded', initializeApp);
 async function initializeApp() {
     console.log('🚀 Initializing application...');
+    
     try {
-        // Step 1: Verify CONFIG exists
+        // Validate prerequisites
         if (!window.CONFIG) {
-            throw new Error('CONFIG not loaded. Check script order in HTML.');
+            throw new Error('CONFIG not loaded. Ensure config.js is first.');
         }
-        console.log('✓ CONFIG loaded');
-        // Step 2: Verify API exists
-        if (!window.api) {
-            throw new Error('API not loaded. Check script order in HTML.');
-        }
-        console.log('✓ API loaded');
-        // Step 3: Health check
-        const isHealthy = await window.api.healthCheck();
-        updateHealthStatus(isHealthy);
         
-        if (!isHealthy) {
-            console.warn('⚠️ Backend is unavailable. Some features may not work.');
+        if (!window.api) {
+            throw new Error('API Service not initialized. Check api.js instantiation.');
         }
-        // Step 4: Load tasks
-        const tasks = await window.api.fetchTasks();
-        loadTasks(tasks);
-        console.log('✓ Tasks loaded');
-        // Step 5: Setup auto-refresh
-        setupAutoRefresh();
-        console.log('✓ Auto-refresh enabled');
+        
+        if (typeof displayErrorUI !== 'function') {
+            throw new Error('displayErrorUI function not defined. Check utils.js.');
+        }
+        // Now safe to proceed with initialization
+        console.log('✅ All dependencies loaded. Proceeding...');
+        
+        // Your initialization logic here
+        // await api.fetchTasks();
+        // etc.
     } catch (error) {
-        console.error('❌ Initialization error:', error.message);
-        displayErrorUI('Failed to initialize. Please refresh the page.');
+        console.error('❌ Initialization failed:', error.message);
+        displayErrorUI(error.message);
     }
 }
+// Call only when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 
 /**
