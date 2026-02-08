@@ -3,146 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI-powered Project Status Chat Agent">
-    <meta name="theme-color" content="#667eea">
-    
-    <title>🚀 Project Status Chat Agent</title>
-    
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <title>Notes - Task Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            text-align: center; color: white; margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .section { 
+            background: white; margin-bottom: 20px; padding: 25px; 
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .section:hover { transform: translateY(-2px); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        
+        input, select, textarea, button { 
+            width: 100%; padding: 12px; margin: 8px 0; 
+            border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        button { 
+            background: #667eea; color: white; border: none; 
+            cursor: pointer; font-weight: 600; text-transform: uppercase;
+            transition: all 0.2s ease; letter-spacing: 0.5px;
+        }
+        button:hover { 
+            background: #5a67d8; transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active { transform: translateY(0); }
+        
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #545b62; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        
+        .task-card { 
+            border: 1px solid #e9ecef; padding: 20px; margin: 12px 0; 
+            border-radius: 8px; background: #f8f9fa;
+            transition: all 0.2s ease;
+        }
+        .task-card:hover { 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .status { 
+            padding: 6px 14px; border-radius: 25px; font-size: 12px; 
+            font-weight: bold; text-transform: uppercase; display: inline-block;
+        }
+        .status.pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status.in-progress { background: #cce5ff; color: #004085; border: 1px solid #74b9ff; }
+        .status.completed { background: #d4edda; color: #155724; border: 1px solid #00b894; }
+        
+        .chat-container {
+            height: 400px; display: flex; flex-direction: column;
+        }
+        .chat-messages { 
+            flex: 1; overflow-y: auto; border: 1px solid #ddd; 
+            padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;
+        }
+        .message { margin: 12px 0; padding: 12px 16px; border-radius: 18px; max-width: 80%; }
+        .message.user { 
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white; 
+            margin-left: auto; text-align: right;
+        }
+        .message.bot { 
+            background: white; border: 1px solid #ddd; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .health-indicator {
+            padding: 10px 15px; border-radius: 25px; font-weight: 600;
+            display: inline-block; margin: 10px 0;
+        }
+        .health-online { background: #d4edda; color: #155724; }
+        .health-offline { background: #f8d7da; color: #721c24; }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8ff);
+            padding: 20px; border-radius: 12px; margin: 15px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .search-results {
+            max-height: 300px; overflow-y: auto;
+        }
+        
+        @media (max-width: 768px) { 
+            .grid, .grid-3 { grid-template-columns: 1fr; }
+            .header h1 { font-size: 2em; }
+        }
+        
+        .loading { text-align: center; color: #666; padding: 20px; }
+        .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
+        .success { color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header Section -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <h1 class="title">📊 Project Status Chat Agent</h1>
-                    <p class="subtitle">AI-powered task management & project insights</p>
-                </div>
-                <div id="status-indicator" class="status-indicator">🔄 Checking...</div>
-            </div>
-        </header>
-
-        <!-- Main Content Grid -->
-        <div class="main-content">
-            <!-- Chat Panel -->
-            <section class="panel chat-panel">
-                <h2>💬 AI Assistant</h2>
-                <p class="section-hint">Chat with your AI project assistant</p>
-                
-                <div id="chat-box" class="chat-box"></div>
-                
-                <div class="input-group">
-                    <input 
-                        type="text" 
-                        id="user-input" 
-                        class="input-field"
-                        placeholder="Ask about tasks, timeline, or project status..."
-                        aria-label="Chat message input"
-                    >
-                    <button onclick="sendMessage()" class="btn btn-primary" title="Send message">📤 Send</button>
-                </div>
-                <button onclick="getProjectSummary()" class="btn btn-secondary btn-full">📋 Get AI Summary</button>
-            </section>
-
-            <!-- Tasks Panel -->
-            <section class="panel tasks-panel">
-                <h2>📋 Project Tasks</h2>
-                <p class="section-hint">All tasks at a glance</p>
-                
-                <div id="tasks-container" class="tasks-container">
-                    <p style="text-align: center; color: #999;">⏳ Loading tasks...</p>
-                </div>
-                
-                <button onclick="loadTasks()" class="btn btn-secondary btn-full">🔄 Refresh</button>
-            </section>
+        <div class="header">
+            <h1>📝 Notes - Task Management System</h1>
+            <p>Complete Project Management with AI Assistant</p>
+            <div id="healthStatus" class="health-indicator">🔄 Checking API status...</div>
         </div>
 
-        <!-- Summary Section -->
-        <section class="panel summary-panel">
-            <h2>📈 Project Overview</h2>
-            <p class="section-hint">AI-generated insights about your project</p>
-            <div id="summary-container" class="summary-container">
-                <p style="text-align: center; color: #999;">Click "Get AI Summary" to generate insights</p>
+        <!-- DASHBOARD & HEALTH -->
+        <div class="section">
+            <h2>📊 Dashboard & System Status</h2>
+            <div class="grid-3">
+                <button onclick="checkHealth()">🔍 Check API Health</button>
+                <button onclick="getSummary()">📈 Get AI Summary</button>
+                <button onclick="loadAllTasks()">🔄 Refresh All Tasks</button>
             </div>
-        </section>
+            <div id="summaryDisplay"></div>
+        </div>
 
-        <!-- Task Creation Form -->
-        <section class="panel form-panel">
+        <!-- ADD NEW TASK -->
+        <div class="section">
             <h2>➕ Create New Task</h2>
-            <p class="section-hint">Add a new task to your project</p>
-            
-            <form id="task-form" class="task-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="task-name">Task Name *</label>
-                        <input 
-                            type="text" 
-                            id="task-name" 
-                            class="input-field"
-                            placeholder="e.g., Design homepage mockups"
-                            required
-                        >
-                    </div>
-                    <div class="form-group">
-                        <label for="assigned-to">Assigned To *</label>
-                        <input 
-                            type="text" 
-                            id="assigned-to" 
-                            class="input-field"
-                            placeholder="e.g., John Doe"
-                            required
-                        >
-                    </div>
+            <form id="taskForm">
+                <div class="grid">
+                    <input id="taskName" placeholder="Task Name *" required>
+                    <input id="assignedTo" placeholder="Assigned To *" required>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="start-date">Start Date</label>
-                        <input type="date" id="start-date" class="input-field">
-                    </div>
-                    <div class="form-group">
-                        <label for="end-date">End Date</label>
-                        <input type="date" id="end-date" class="input-field">
-                    </div>
+                <div class="grid">
+                    <input id="client" placeholder="Client Name">
+                    <input id="notifyEmail" type="email" placeholder="Notification Email">
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="task-status">Status</label>
-                        <select id="task-status" class="input-field">
-                            <option value="To Do">📌 To Do</option>
-                            <option value="In Progress">⚙️ In Progress</option>
-                            <option value="Completed">✅ Completed</option>
-                            <option value="On Hold">⏸️ On Hold</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="client">Client</label>
-                        <input 
-                            type="text" 
-                            id="client" 
-                            class="input-field"
-                            placeholder="e.g., Acme Corp"
-                        >
-                    </div>
+                <div class="grid">
+                    <input type="date" id="startDate" title="Start Date">
+                    <input type="date" id="endDate" title="End Date">
                 </div>
-
-                <button type="button" onclick="addNewTask()" class="btn btn-primary btn-full">✨ Create Task</button>
+                <select id="status">
+                    <option value="Pending">📋 Pending</option>
+                    <option value="In Progress">⚡ In Progress</option>
+                    <option value="Completed">✅ Completed</option>
+                </select>
+                <button type="submit">🚀 Create Task</button>
             </form>
-        </section>
+        </div>
+
+        <!-- SEARCH TASKS -->
+        <div class="section">
+            <h2>🔍 Search Tasks</h2>
+            <div class="grid">
+                <input id="searchInput" placeholder="Search by task name or assigned person..." 
+                       onkeypress="if(event.key==='Enter') searchTasks()">
+                <button onclick="searchTasks()">🔍 Search Tasks</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <!-- ALL TASKS -->
+        <div class="section">
+            <h2>📋 All Tasks</h2>
+            <div class="grid">
+                <button onclick="loadAllTasks()">🔄 Refresh Tasks</button>
+                <button onclick="clearTasksList()" class="btn-secondary">🗑️ Clear Display</button>
+            </div>
+            <div id="taskList" class="loading">Loading tasks...</div>
+        </div>
+
+        <!-- AI CHAT ASSISTANT -->
+        <div class="section">
+            <h2>🤖 AI Project Assistant</h2>
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message bot">👋 Hi! I'm your AI assistant. Ask me about your tasks, project status, or anything related to project management!</div>
+                </div>
+                <form id="chatForm" onsubmit="sendChat(event)">
+                    <div class="grid">
+                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
+                        <button type="submit">📤 Send Message</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
-    <script src="api.js"></script>
-    <script src="app.js"></script>
-    <script src="script.js"></script>
-    <!-- Call initializeApp after DOM loads, not inline -->
-<script>
-    document.addEventListener('DOMContentLoaded', initializeApp);
-</script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
