@@ -64,6 +64,44 @@ class TaskUpdate(BaseModel):
     new_status: str
 
 # ============= HELPER FUNCTIONS =============
+def connect_to_google_sheets():
+    """
+    Load Google credentials from environment variable and authenticate with Google Sheets.
+    """
+    # Retrieve the credentials from Railway environment
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+    
+    if not credentials_json:
+        raise ValueError(
+            "GOOGLE_CREDENTIALS environment variable not found. "
+            "Please add it to your Railway project settings."
+        )
+    
+    try:
+        credentials_dict = json.loads(credentials_json)
+    except json.JSONDecodeError:
+        raise ValueError("GOOGLE_CREDENTIALS is not valid JSON.")
+    
+    # Define required scopes for Google Sheets access
+    scopes = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    # Authenticate using the service account credentials
+    creds = ServiceAccountCredentials.from_dict(credentials_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    
+    # Open your Google Sheet (replace "Task_Manager" with your sheet name)
+    return client.open("Task_Manager").sheet1
+# Initialize the connection
+try:
+    sheet = connect_to_google_sheets()
+    print("✅ Successfully connected to Google Sheets!")
+except Exception as e:
+    print(f"❌ Error connecting to Google Sheets: {e}")
+    sheet = None
+
 def fetch_all_tasks():
     """Fetch all tasks from Google Sheet and return as list of dicts"""
     try:
