@@ -292,3 +292,5 @@ window.addEventListener("beforeunload", () => {
  * Initialize app when DOM is ready
  */
 document.addEventListener("DOMContentLoaded", initializeApp);
+
+console.log('✅ app.js loaded, ready to initialize');
