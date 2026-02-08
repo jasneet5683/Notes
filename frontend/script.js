@@ -78,13 +78,14 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const taskData = {
-        task_name: document.getElementById('taskName').value.trim(),
+        Task_Name: document.getElementById('taskName').value.trim(),
         assigned_to: document.getElementById('assignedTo').value.trim(),
-        client: document.getElementById('client').value.trim() || 'Not specified',
+        Client: document.getElementById('client').value.trim() || 'Not specified',
         start_date: document.getElementById('startDate').value || null,
         end_date: document.getElementById('endDate').value || null,
         status: document.getElementById('status').value,
-        notify_email: document.getElementById('notifyEmail').value.trim() || null
+        Priority: parseInt(document.getElementById('priority').value) || 1,
+        Notify_Email: document.getElementById('notifyEmail').value.trim() || null
     };
     
     try {
@@ -99,7 +100,6 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
         });
         
         const result = await response.json();
-        
         if (response.ok) {
             showNotification(result.message, 'success');
             document.getElementById('taskForm').reset();
@@ -234,29 +234,50 @@ function sendChat(event) {
 }
 
 // 🛠️ UTILITY FUNCTIONS
-
 function createTaskCard(task) {
+    const priorityEmoji = getPriorityEmoji(task.Priority);
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'Not set';
+        return new Date(dateStr).toLocaleDateString();
+    };
+    
     return `
         <div class="task-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0; color: #333;">${task.task_name}</h3>
+                <h3 style="margin: 0; color: #333;">${task.Task_Name || 'Untitled Task'}</h3>
                 <span class="status ${task.status?.toLowerCase().replace(' ', '-')}">${task.status}</span>
             </div>
-            <p style="margin: 5px 0;"><strong>👤 Assigned to:</strong> ${task.assigned_to}</p>
-            <p style="margin: 5px 0;"><strong>🏢 Client:</strong> ${task.client || 'Not specified'}</p>
-            <p style="margin: 5px 0;"><strong>📧 Notify:</strong> ${task.notify_email || 'None'}</p>
-            <p style="margin: 5px 0;"><strong>📅 Duration:</strong> ${task.start_date || 'No start'} → ${task.end_date || 'No end'}</p>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="font-size: 14px; color: #666;">Priority: ${priorityEmoji} ${task.Priority || 1}</span>
+                <span style="font-size: 12px; color: #999;">Task ID: ${task.Task_Name?.substring(0, 8)}...</span>
+            </div>
+            <p style="margin: 5px 0;"><strong>👤 Assigned to:</strong> ${task.assigned_to || 'Unassigned'}</p>
+            <p style="margin: 5px 0;"><strong>🏢 Client:</strong> ${task.Client || 'Not specified'}</p>
+            <p style="margin: 5px 0;"><strong>📅 Start Date:</strong> ${formatDate(task.start_date)}</p>
+            <p style="margin: 5px 0;"><strong>📅 End Date:</strong> ${formatDate(task.end_date)}</p>
             <div style="margin-top: 15px;">
                 <label style="font-weight: 600;">Update Status:</label>
-                <select onchange="updateTaskStatus('${task.task_name}', this.value)" style="margin-top: 5px;">
+                <select onchange="updateTaskStatus('${task.Task_Name}', this.value)" style="margin-top: 5px; width: 100%; padding: 5px;">
                     <option value="${task.status}" selected>Current: ${task.status}</option>
                     <option value="Pending">📋 Pending</option>
                     <option value="In Progress">⚡ In Progress</option>
                     <option value="Completed">✅ Completed</option>
+                    <option value="On Hold">⏸️ On Hold</option>
+                    <option value="Cancelled">❌ Cancelled</option>
                 </select>
             </div>
         </div>
     `;
+}
+
+function getPriorityEmoji(priority) {
+    switch(priority) {
+        case 1: return '🟢'; // Low
+        case 2: return '🟡'; // Medium  
+        case 3: return '🟠'; // High
+        case 4: return '🔴'; // Critical
+        default: return '⚪'; // Unknown
+    }
 }
 
 function showNotification(message, type) {
@@ -266,7 +287,9 @@ function showNotification(message, type) {
     notification.style.cssText = `
         position: fixed; top: 20px; right: 20px; z-index: 1000;
         padding: 15px 20px; border-radius: 8px; font-weight: 600;
-        animation: slideIn 0.3s ease;
+        animation: slideIn 0.3s ease; max-width: 350px;
+        ${type === 'success' ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' : ''}
+        ${type === 'error' ? 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;' : ''}
     `;
     
     document.body.appendChild(notification);
@@ -279,8 +302,38 @@ function clearTasksList() {
 
 // 🚀 INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Notes App initialized');
+    console.log('🚀 Task Management App initialized');
     console.log('🌐 API Base URL:', API_BASE_URL);
+    
+    // Add CSS for animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .task-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            transition: box-shadow 0.2s ease;
+        }
+        .task-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.completed { background: #d4edda; color: #155724; }
+        .status.in-progress { background: #fff3cd; color: #856404; }
+        .status.pending { background: #f8d7da; color: #721c24; }
+    `;
+    document.head.appendChild(style);
     
     checkHealth();
     loadAllTasks();
