@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
@@ -13,6 +13,7 @@ class TaskCreate(BaseModel):
     status: Status = "todo"
     priority: Priority = "medium"
     due_date: Optional[str] = None  # keep string for simplicity (e.g., "2026-03-01")
+    notify_email: Optional[EmailStr] = None
 
 
 class TaskUpdate(BaseModel):
