@@ -102,3 +102,4 @@ const Utils = {
         };
     }
 };
+console.log('✅ utils.js loaded, displayErrorUI defined:', typeof displayErrorUI);
