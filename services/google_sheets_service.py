@@ -1,5 +1,6 @@
 import json
 import gspread
+import os
 from oauth2client.service_account import ServiceAccountCredentials
 from config import GOOGLE_SHEETS_CREDENTIALS, SPREADSHEET_ID
 from models.schemas import TaskInput, TaskUpdate
@@ -7,19 +8,39 @@ from typing import List, Dict, Optional
 
 # Initialize Google Sheets connection
 def get_google_sheet():
-    """Authenticate and return Google Sheets connection"""
+    """
+    Establishes connection to Google Sheets using credentials from environment.
+    Returns the first worksheet of the Task_Manager spreadsheet.
+    """
     try:
-        creds_json = json.loads(GOOGLE_SHEETS_CREDENTIALS)
-        scope = [
+        # Retrieve credentials from environment
+        credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+        
+        if not credentials_json:
+            raise ValueError("GOOGLE_CREDENTIALS environment variable not set")
+        
+        # Parse credentials
+        creds_dict = json.loads(credentials_json)
+        
+        # Define scopes for Google Sheets and Drive access
+        scopes = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
-        client = gspread.authorize(credentials)
-        sheet = client.open_by_key(SPREADSHEET_ID)
-        return sheet.worksheet(0)  # Access first worksheet
+        
+        # Authorize and connect
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scopes)
+        client = gspread.authorize(creds)
+        
+        # Open spreadsheet by name
+        spreadsheet = client.open("Task_Manager")
+        return spreadsheet.sheet1
+        
+    except ValueError as ve:
+        print(f"❌ Configuration Error: {ve}")
+        return None
     except Exception as e:
-        print(f"❌ Google Sheets connection error: {e}")
+        print(f"❌ Connection Error: {e}")
         return None
 
 def fetch_all_tasks() -> List[Dict]:
