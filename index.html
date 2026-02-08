@@ -256,11 +256,11 @@
         // Fetch and display tasks on page load
         async function loadTasks() {
             try {
-                const response = await fetch(`${API_URL}/tasks`);
+                const response = await fetch(`${API_URL}/api/tasks`);
                 const data = await response.json();
                 
                 // Display task summary
-                const summaryResponse = await fetch(`${API_URL}/status-summary`);
+                const summaryResponse = await fetch(`${API_URL}/api/status-summary`);
                 const summaryData = await summaryResponse.json();
                 
                 displayStatusSummary(summaryData);
@@ -332,7 +332,7 @@
 
             try {
                 // Send to backend
-                const response = await fetch(`${API_URL}/chat`, {
+                const response = await fetch(`${API_URL}/api/chat`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
