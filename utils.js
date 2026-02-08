@@ -102,4 +102,43 @@ const Utils = {
         };
     }
 };
+/**
+ * Display error messages in the UI
+ * @param {string} message - The error message to show
+ */
+function displayErrorUI(message) {
+    console.error('❌ Error:', message);
+    
+    // Try to find error container
+    let errorContainer = document.getElementById('error-container');
+    
+    // Create one if it doesn't exist
+    if (!errorContainer) {
+        errorContainer = document.createElement('div');
+        errorContainer.id = 'error-container';
+        errorContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #FF6B6B;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            z-index: 10000;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        `;
+        document.body.appendChild(errorContainer);
+    }
+    
+    errorContainer.innerHTML = `<strong>Error:</strong> ${message}`;
+    errorContainer.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorContainer.style.display = 'none';
+    }, 5000);
+}
+
 console.log('✅ utils.js loaded, displayErrorUI defined:', typeof displayErrorUI);
