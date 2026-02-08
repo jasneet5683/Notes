@@ -19,10 +19,10 @@ const CONFIG = {
     
     // API endpoints
     ENDPOINTS: {
-        HEALTH: "/health",
-        CHAT: "/chat",
-        TASKS: "/tasks",
-        SUMMARY: "/summary"
+        HEALTH: "/api/health",
+        CHAT: "/api/chat",
+        TASKS: "/api/tasks",
+        SUMMARY: "/api/summary"
     }
 };
 
