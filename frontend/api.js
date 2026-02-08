@@ -146,3 +146,11 @@ if (typeof CONFIG === 'undefined') {
 
 const api = new APIService(CONFIG.API_BASE_URL);
 console.log('✅ API Service initialized successfully');
+// Instantiate the API service globally
+if (window.CONFIG && window.CONFIG.API_BASE_URL) {
+    window.api = new APIService(window.CONFIG.API_BASE_URL);
+    console.log('✅ API Service initialized');
+} else {
+    console.error('❌ CONFIG not found. Check config.js is loaded first.');
+}
+
