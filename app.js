@@ -14,6 +14,12 @@ async function initializeApp() {
     console.log('🚀 Initializing application...');
     
     try {
+        // Check if displayErrorUI is available
+        if (typeof displayErrorUI !== 'function') {
+            console.error('❌ displayErrorUI not found in global scope');
+            throw new Error('displayErrorUI function not properly defined');
+        }
+        console.log('✅ displayErrorUI available');
         // Validate prerequisites
         if (!window.CONFIG) {
             throw new Error('CONFIG not loaded. Ensure config.js is first.');
