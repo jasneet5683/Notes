@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from config import API_TITLE, API_VERSION, HOST, PORT
 from api.endpoints import router
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -10,6 +14,10 @@ app = FastAPI(
     version=API_VERSION,
     description="A smart project management chat agent powered by AI"
 )
+
+class ChatRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    conversation_history: Optional[List[str]] = Field(default=[], description="Previous messages")
 
 # CORS middleware for frontend integration
 app.add_middleware(
@@ -19,6 +27,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Invalid request format", "errors": exc.errors()}
+    )
 
 # Include API router
 app.include_router(router)
