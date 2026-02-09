@@ -193,14 +193,20 @@ function sendChat(event) {
     messagesDiv.innerHTML += `<div id="${loadingId}" class="message bot">🤖 Thinking...</div>`;
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     
+    // 🔥 FIXED: Restructure payload to match API expectations
+    const requestPayload = {
+        prompt: message,
+        conversation_history: conversationHistory.map(msg => ({
+            role: msg.role,
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+        }))
+    };
+    
     // Send to API
     fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            prompt: message,
-            conversation_history: conversationHistory
-        })
+        body: JSON.stringify(requestPayload)
     })
     .then(response => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -214,7 +220,7 @@ function sendChat(event) {
         messagesDiv.innerHTML += `<div class="message bot">🤖 ${data.response}</div>`;
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
-        // Update conversation history
+        // Update conversation history with proper string content
         conversationHistory.push(
             { role: 'user', content: message },
             { role: 'assistant', content: data.response }
