@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
+from pydantic import BaseModel
+from typing import List, Optional
+from fastapi.responses import JSONResponse
 from models.schemas import (
     TaskInput, TaskUpdate, TaskResponse, 
     ChatRequest, ChatResponse
@@ -11,6 +14,12 @@ from services.google_sheets_service import (
 from services.openai_service import (
     generate_ai_response, summarize_tasks
 )
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+class ChatRequest(BaseModel):
+    prompt: str  # Add this field
+    conversation_history: Optional[List[ChatMessage]] = None
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
