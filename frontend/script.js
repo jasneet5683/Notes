@@ -198,7 +198,7 @@ function sendChat(event) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            user_message: message,
+            prompt: message,
             conversation_history: conversationHistory
         })
     })
