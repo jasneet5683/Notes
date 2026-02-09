@@ -3,9 +3,10 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.responses import JSONResponse
+
+# Removed ChatRequest and ChatResponse from imports to avoid conflict with local definitions
 from models.schemas import (
-    TaskInput, TaskUpdate, TaskResponse, 
-    ChatRequest, ChatResponse
+    TaskInput, TaskUpdate, TaskResponse
 )
 from services.google_sheets_service import (
     fetch_all_tasks, add_task_to_sheet, 
@@ -14,18 +15,21 @@ from services.google_sheets_service import (
 from services.openai_service import (
     generate_ai_response, summarize_tasks
 )
+
+# ✅ DATA MODELS
+
 class ChatMessage(BaseModel):
     role: str
     content: str
 
 class ChatRequest(BaseModel):
-    prompt: str  # Add this field
+    prompt: str 
     conversation_history: Optional[List[ChatMessage]] = None
 
 class ChatResponse(BaseModel):
     response: str
     timestamp: datetime
-    status: str = "success"  # Optional: add status field
+    status: str = "success" 
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -88,10 +92,17 @@ def search_all_tasks(query: str = Query(..., min_length=1)):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
+        # Ensure all history items are strings to prevent type errors
+        # This rebuilds the list ensuring 'content' is strictly a string
+        conversation_history = [
+            ChatMessage(role=msg.role, content=str(msg.content)) 
+            for msg in (request.conversation_history or [])
+        ]
+
         # Generate AI response
         response_text = generate_ai_response(
             user_message=request.prompt,
-            conversation_history=request.conversation_history or []
+            conversation_history=conversation_history
         )
         
         # Return structured response with timestamp
@@ -100,15 +111,17 @@ async def chat(request: ChatRequest):
             timestamp=datetime.utcnow()
         )
         
-    
     except Exception as e:
         # Log the actual error for debugging
+        print(f"Error in chat endpoint: {e}") 
         return JSONResponse(
             status_code=500,
-            content={"detail": "Processing error", "timestamp": datetime.utcnow().isoformat()}
+            content={
+                "detail": "Processing error", 
+                "timestamp": datetime.utcnow().isoformat()
+            }
         )
 
-        
 @router.get("/summary", response_model=dict)
 def get_project_summary():
     """Get an AI-generated summary of all project tasks"""
