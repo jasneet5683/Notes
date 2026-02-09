@@ -17,9 +17,15 @@ from services.openai_service import (
 class ChatMessage(BaseModel):
     role: str
     content: str
+
 class ChatRequest(BaseModel):
     prompt: str  # Add this field
     conversation_history: Optional[List[ChatMessage]] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    timestamp: datetime
+    status: str = "success"  # Optional: add status field
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -82,16 +88,26 @@ def search_all_tasks(query: str = Query(..., min_length=1)):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        response = generate_ai_response(
+        # Generate AI response
+        response_text = generate_ai_response(
             user_message=request.prompt,
             conversation_history=request.conversation_history or []
         )
-        return {"response": response}
+        
+        # Return structured response with timestamp
+        return ChatResponse(
+            response=response_text,
+            timestamp=datetime.utcnow()
+        )
+        
+    
     except Exception as e:
+        # Log the actual error for debugging
         return JSONResponse(
             status_code=500,
-            content={"detail": "Processing error"}
+            content={"detail": "Processing error", "timestamp": datetime.utcnow().isoformat()}
         )
+
         
 @router.get("/summary", response_model=dict)
 def get_project_summary():
