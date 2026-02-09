@@ -71,10 +71,12 @@ Guidelines for responses:
         # Add conversation history if provided
         if conversation_history:
             for msg in conversation_history[-5:]:  # Last 5 messages for context
-                messages.append({"role": "user", "content": msg})
+                # EXPLICIT FIX: Convert msg to string to prevent type errors
+                messages.append({"role": "user", "content": str(msg)})
         
         # Add current user message
-        messages.append({"role": "user", "content": user_message})
+        # EXPLICIT FIX: Convert user_message to string
+        messages.append({"role": "user", "content": str(user_message)})
         
         # Call OpenAI API
         response = client.chat.completions.create(
@@ -84,7 +86,7 @@ Guidelines for responses:
             max_tokens=500
         )
         
-        return response.choices[0].message.content
+        return response.choices[0].message.content.strip()
         
     except Exception as e:
         print(f"❌ Error generating AI response: {e}")
@@ -97,12 +99,8 @@ def get_tasks_by_assignee(assignee_name: str) -> str:
         user_tasks = filter_tasks_by_assignee(all_tasks, assignee_name)
         
         if not user_tasks:
-            # Get list of all assignees to suggest alternatives
-            assignees = set()
-            for task in all_tasks:
-                assigned_to = task.get('Assigned To', '').strip()
-                if assigned_to:
-                    assignees.add(assigned_to)
+            # Get list of all assignees to suggest alternatives (Optimized using set comprehension)
+            assignees = {task.get('Assigned To', '').strip() for task in all_tasks if task.get('Assigned To')}
             
             suggestion = f"Available assignees: {', '.join(sorted(assignees))}" if assignees else ""
             return f"No tasks found assigned to '{assignee_name}'. {suggestion}"
@@ -135,7 +133,7 @@ def summarize_tasks() -> str:
             max_tokens=300
         )
         
-        return response.choices[0].message.content
+        return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"❌ Error summarizing tasks: {e}")
         return "Unable to generate summary."
