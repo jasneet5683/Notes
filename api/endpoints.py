@@ -71,18 +71,19 @@ def search_all_tasks(query: str = Query(..., min_length=1)):
 # ✅ AI CHAT ENDPOINTS
 
 @router.post("/chat", response_model=ChatResponse)
-def chat_with_agent(request: ChatRequest):
-    """Get AI assistance for project management tasks"""
-    response_text = generate_ai_response(
-        user_message=request.user_message,
-        conversation_history=request.conversation_history
-    )
-    return ChatResponse(
-        response=response_text,
-        timestamp=datetime.now(),
-        status="success"
-    )
-
+async def chat(request: ChatRequest):
+    try:
+        response = generate_ai_response(
+            user_message=request.prompt,
+            conversation_history=request.conversation_history or []
+        )
+        return {"response": response}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Processing error"}
+        )
+        
 @router.get("/summary", response_model=dict)
 def get_project_summary():
     """Get an AI-generated summary of all project tasks"""
