@@ -15,9 +15,14 @@ app = FastAPI(
     description="A smart project management chat agent powered by AI"
 )
 
-class ChatRequest(BaseModel):
-    prompt: str = Field(..., min_length=1, max_length=2000)
-    conversation_history: Optional[List[str]] = Field(default=[], description="Previous messages")
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class PromptRequest(BaseModel):
+    prompt: str
+    conversation_history: Optional[List[ChatMessage]] = None
+
 
 # CORS middleware for frontend integration
 app.add_middleware(
