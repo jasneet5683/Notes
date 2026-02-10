@@ -155,16 +155,20 @@
             <h2>➕ Create New Task</h2>
             <form id="taskForm">
                 <div class="grid">
-                    <input id="taskName" placeholder="Task Name *" required>
-                    <input id="assignedTo" placeholder="Assigned To *" required>
+                    <input id="task_name" placeholder="Task Name *" required>
+                    <input id="assigned_to" placeholder="Assigned To *" required>
                 </div>
                 <div class="grid">
-                    <input id="client" placeholder="Client Name">
-                    <input id="notifyEmail" type="email" placeholder="Notification Email">
+                    <select_id="client">
+                       <option value="Etisalat">Etisalat</option>
+                        <option value="DU">DU</option>
+                        <option value="Batelco">Batelco</option>
+                </select> 
+                    <input id="notify_email" type="email" placeholder="Notification Email">
                 </div>
                 <div class="grid">
-                    <input type="date" id="startDate" title="Start Date">
-                    <input type="date" id="endDate" title="End Date">
+                    <input type="date" id="start_date" title="Start Date">
+                    <input type="date" id="end_date" title="End Date">
                 </div>
                 <select id="status">
                     <option value="Pending">📋 Pending</option>
