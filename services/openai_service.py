@@ -13,11 +13,14 @@ def format_tasks_for_context(tasks: List) -> str:
     
     formatted_tasks = []
     for task in tasks:
-        # UPDATED: Keys now match Google Sheet headers exactly
+        # UPDATED: Added Start Date, End Date, and Client
         task_info = (
             f"• Task: {task.get('Task_Name', 'Unknown')} | "
-            f"Assigned to: {task.get('assigned_to', 'Unassigned')} | "
+            f"Assigned: {task.get('assigned_to', 'Unassigned')} | "
             f"Status: {task.get('status', 'Unknown')} | "
+            f"End Date: {task.get('end_date', 'N/A')} | " 
+            f"Start Date: {task.get('start_date', 'N/A')} | "
+            f"Client: {task.get('Client', 'N/A')} | " 
             f"Priority: {task.get('Priority', 'N/A')}"
         )
         formatted_tasks.append(task_info)
@@ -47,22 +50,24 @@ def generate_ai_response(
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
         
-        # Enhanced system prompt with better task understanding
-        system_prompt = f"""You are a helpful project management assistant. Help users with their project tasks and status updates.
-
-When users ask about tasks assigned to specific people:
-- Search through the task list carefully
-- Match names case-insensitively (e.g., "Ady", "ady", "ADY" should all match)
-- If tasks are found, list them clearly
-- If no tasks are found, double-check the assignee names and suggest similar matches
-
-{tasks_context}
-
-Guidelines for responses:
-- Be specific about task details when listing them
-- If asking about a person's tasks, show ALL tasks assigned to that person
-- If no exact match is found, suggest checking spelling or list available assignees
-"""
+        # Get Today's Date so AI can calculate "Next 10 days"
+        today_date = datetime.now().strftime("%Y-%m-%d")
+        # Enhanced system prompt with DATE AWARENESS
+        system_prompt = f"""You are a helpful project management assistant. 
+        
+        CONTEXT:
+        Today's Date: {today_date}
+        
+        TASK LIST:
+        {tasks_context}
+        INSTRUCTIONS:
+        - Search through the task list carefully
+        - When users ask about dates (e.g., "due soon", "next 10 days"), compare the 'End Date' in the list with 'Today's Date'.
+        - If the user asks about specific people, match names case-insensitively.
+        - Be specific. If a task is overdue (End Date is before Today), mention that.
+        - If tasks are found, list them clearly
+        - If no tasks are found, double-check the assignee names and suggest similar matches
+        """
         
         # Build conversation messages
         messages = [
@@ -71,7 +76,7 @@ Guidelines for responses:
         
         # Add conversation history if provided
         if conversation_history:
-            for msg in conversation_history[-5:]:  # Last 5 messages for context
+            for msg in conversation_history[-5:]:
                 messages.append({"role": "user", "content": str(msg)})
         
         # Add current user message
@@ -81,7 +86,7 @@ Guidelines for responses:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0.3,  # Lower temperature for more consistent responses
+            temperature=0.3,
             max_tokens=500
         )
         
@@ -90,6 +95,8 @@ Guidelines for responses:
     except Exception as e:
         print(f"❌ Error generating AI response: {e}")
         return "Sorry, I couldn't generate a response at this moment. Please try again."
+
+  
 
 def get_tasks_by_assignee(assignee_name: str) -> str:
     """Get tasks for a specific assignee - useful for direct queries"""
