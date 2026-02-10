@@ -84,7 +84,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
         start_date: document.getElementById('startDate').value || null,
         end_date: document.getElementById('endDate').value || null,
         status: document.getElementById('status').value,
-        priority: parseInt(document.getElementById('priority').value) || 1,
+        priority: document.getElementById('priority').value || 1,
         notify_email: document.getElementById('notifyEmail').value.trim() || null
     };
     
