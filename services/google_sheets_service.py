@@ -120,3 +120,48 @@ def search_tasks(search_term: str) -> List[Dict]:
     except Exception as e:
         print(f"❌ Error searching tasks: {e}")
         return []
+# services/google_sheets_service.py
+
+def update_task_field(task_name: str, field_type: str, new_value: str) -> str:
+    """
+    Updates a specific field for a task in Google Sheets.
+    field_type options: 'status', 'priority', 'assigned_to', 'end_date'
+    """
+    try:
+        worksheet = get_google_sheet()
+        if not worksheet:
+            return "Error: Could not connect to Google Sheets."
+
+        all_records = worksheet.get_all_records()
+        
+        # 1. Map the AI's "field_type" to your actual Google Sheet Header Names and Column Index
+        # IMPORTANT: Check your sheet. If 'Status' is Column D (4), put 4. 
+        # If 'Priority' is Column F (6), put 6. Adjust these numbers!
+        COLUMN_MAPPING = {
+            "status": {"col": 4, "header": "status"},
+            "assigned_to": {"col": 5, "header": "assigned_to"},
+            "priority": {"col": 7, "header": "Priority"}, 
+            "end_date": {"col": 3, "header": "end_date"}
+        }
+
+        if field_type not in COLUMN_MAPPING:
+            return f"Error: I don't know how to update the field '{field_type}'."
+
+        target_col_index = COLUMN_MAPPING[field_type]["col"]
+
+        # 2. Find the Row
+        task_name_clean = task_name.strip().lower()
+        
+        for idx, record in enumerate(all_records, start=2): # Start at 2 for headers
+            current_task = str(record.get("Task_Name", record.get("Task Name", ""))).strip().lower()
+            
+            if current_task == task_name_clean:
+                # 3. Update the specific cell
+                worksheet.update_cell(idx, target_col_index, new_value)
+                return f"Successfully updated '{field_type}' to '{new_value}' for task '{task_name}'."
+
+        return f"Task '{task_name}' not found."
+
+    except Exception as e:
+        print(f"Error updating sheet: {e}")
+        return f"Technical error while updating: {str(e)}"
