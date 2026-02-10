@@ -13,11 +13,11 @@ def format_tasks_for_context(tasks: List) -> str:
     
     formatted_tasks = []
     for task in tasks:
-        # Include assignee information in the formatting
+        # UPDATED: Keys now match Google Sheet headers exactly
         task_info = (
-            f"• Task: {task.get('Task Name', 'Unknown')} | "
-            f"Assigned to: {task.get('Assigned To', 'Unassigned')} | "
-            f"Status: {task.get('Status', 'Unknown')} | "
+            f"• Task: {task.get('Task_Name', 'Unknown')} | "
+            f"Assigned to: {task.get('assigned_to', 'Unassigned')} | "
+            f"Status: {task.get('status', 'Unknown')} | "
             f"Priority: {task.get('Priority', 'N/A')}"
         )
         formatted_tasks.append(task_info)
@@ -30,7 +30,8 @@ def filter_tasks_by_assignee(tasks: List, assignee_name: str) -> List:
     assignee_lower = assignee_name.lower().strip()
     
     for task in tasks:
-        assigned_to = task.get('Assigned To', '').lower().strip()
+        # UPDATED: Changed 'Assigned To' to 'assigned_to'
+        assigned_to = task.get('assigned_to', '').lower().strip()
         if assigned_to == assignee_lower:
             filtered_tasks.append(task)
     
@@ -71,11 +72,9 @@ Guidelines for responses:
         # Add conversation history if provided
         if conversation_history:
             for msg in conversation_history[-5:]:  # Last 5 messages for context
-                # EXPLICIT FIX: Convert msg to string to prevent type errors
                 messages.append({"role": "user", "content": str(msg)})
         
         # Add current user message
-        # EXPLICIT FIX: Convert user_message to string
         messages.append({"role": "user", "content": str(user_message)})
         
         # Call OpenAI API
@@ -99,8 +98,8 @@ def get_tasks_by_assignee(assignee_name: str) -> str:
         user_tasks = filter_tasks_by_assignee(all_tasks, assignee_name)
         
         if not user_tasks:
-            # Get list of all assignees to suggest alternatives (Optimized using set comprehension)
-            assignees = {task.get('Assigned To', '').strip() for task in all_tasks if task.get('Assigned To')}
+            # UPDATED: Changed 'Assigned To' to 'assigned_to'
+            assignees = {task.get('assigned_to', '').strip() for task in all_tasks if task.get('assigned_to')}
             
             suggestion = f"Available assignees: {', '.join(sorted(assignees))}" if assignees else ""
             return f"No tasks found assigned to '{assignee_name}'. {suggestion}"
