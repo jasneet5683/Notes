@@ -152,40 +152,46 @@
     
         <!-- ADD NEW TASK -->
         <div class="section">
-            <h2>➕ Create New Task</h2>
-            <form id="taskForm">
-                <div class="grid">
-                    <input id="task_name" placeholder="Task Name *" required>
-                    <input id="assigned_to" placeholder="Assigned To *" required>
-                </div>
-                <div class="grid">
-                    <select_id="client">
-                       <option value="Etisalat">Etisalat</option>
-                        <option value="DU">DU</option>
-                        <option value="Batelco">Batelco</option>
-                </select> 
-                    <input id="notify_email" type="email" placeholder="Notification Email">
-                </div>
-                <div class="grid">
-                    <input type="date" id="start_date" title="Start Date">
-                    <input type="date" id="end_date" title="End Date">
-                </div>
-                <select id="status">
-                    <option value="Pending">📋 Pending</option>
-                    <option value="In Progress">⚡ In Progress</option>
-                    <option value="Completed">✅ Completed</option>
-                </select>
-                <select id="priority">
-                    <option value="1">Blocker</option>
-                    <option value="2" selected> Critical</option>
-                    <option value="3">High Priority</option>
-                    <option value="4">Medium Priority</option>
-                    <option value="5">Low Prioroty</option>
-                    <option value="6">Info</option>
-    </select>
-                <button type="submit">🚀 Create Task</button>
-            </form>
+    <h2>➕ Create New Task</h2>
+    <form id="taskForm">
+        <div class="grid">
+            <input id="taskName" placeholder="Task Name *" required>
+            <input id="assignedTo" placeholder="Assigned To *" required>
         </div>
+        <div class="grid">
+             <!-- Client Dropdown -->
+            <select id="client">
+                <option value="Etisalat">Etisalat</option>
+                <option value="DU">DU</option>
+                <option value="Batelco">Batelco</option>
+                <option value="Not specified">Other</option>
+            </select> 
+            <input id="notifyEmail" type="email" placeholder="Notification Email">
+        </div>
+        <div class="grid">
+            <input type="date" id="startDate" title="Start Date">
+            <input type="date" id="endDate" title="End Date">
+        </div>
+        
+        <!-- Status Dropdown -->
+        <select id="status">
+            <option value="Pending">📋 Pending</option>
+            <option value="In Progress">⚡ In Progress</option>
+            <option value="Completed">✅ Completed</option>
+        </select>
+        
+        <!-- Priority Dropdown -->
+        <select id="priority">
+            <option value="1">Blocker</option>
+            <option value="2" selected>Critical</option>
+            <option value="3">High Priority</option>
+            <option value="4">Medium Priority</option>
+            <option value="5">Low Priority</option>
+            <option value="6">Info</option>
+        </select>
+        <button type="submit">🚀 Create Task</button>
+    </form>
+</div>
 
         <!-- SEARCH TASKS -->
         <div class="section">
