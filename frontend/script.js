@@ -123,7 +123,7 @@ async function updateTaskStatus(taskName, newStatus) {
         const response = await fetch(`${API_BASE_URL}/tasks/${encodeURIComponent(taskName)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ new_status: newStatus })
+            body: JSON.stringify({ task_name: taskName, new_status: newStatus })
         });
         
         const result = await response.json();
