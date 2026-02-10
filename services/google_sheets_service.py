@@ -87,16 +87,27 @@ def update_task_status(update: TaskUpdate) -> bool:
         
         all_records = worksheet.get_all_records()
         
+        # 1. Clean the incoming name (Remove leading/trailing spaces & lower case)
+        target_name_clean = update.task_name.strip().lower()
+        
         # Find and update the task
         for idx, record in enumerate(all_records, start=2):  # Start from row 2 (after header)
-            if record.get("Task Name", "").lower() == update.task_name.lower():
-                worksheet.update_cell(idx, 5, update.new_status)  # Column E (Status)
+            
+            # 2. Get the name using the correct key (likely 'Task_Name') 
+            # and clean it (strip spaces)
+            sheet_task_name = str(record.get("Task_Name", record.get("Task Name", ""))).strip().lower()
+            
+            if sheet_task_name == target_name_clean:
+                # 3. Update Column 4 (Status)
+                # Based on your order: Task(1), Start(2), End(3), Status(4)
+                worksheet.update_cell(idx, 4, update.new_status) 
                 return True
         
         return False
     except Exception as e:
         print(f"❌ Error updating task: {e}")
         return False
+
 
 def search_tasks(search_term: str) -> List[Dict]:
     """Search tasks by name or assigned person"""
