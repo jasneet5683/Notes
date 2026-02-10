@@ -65,10 +65,10 @@ def add_task_to_sheet(task: TaskInput) -> bool:
         
         new_row = [
             task.task_name,
-            task.assigned_to,
             task.start_date,
             task.end_date,
             task.status,
+            task.assigned_to,
             task.client,
             task.priority
         ]
