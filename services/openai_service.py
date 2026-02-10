@@ -1,8 +1,9 @@
 import os
+import json
 from datetime import datetime
 from openai import OpenAI
 from config import OPENAI_API_KEY
-from services.google_sheets_service import fetch_all_tasks
+from services.google_sheets_service import fetch_all_tasks, update_task_field
 from typing import List, Optional
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -45,15 +46,36 @@ def generate_ai_response(
     user_message: str, 
     conversation_history: Optional[List[str]] = None
 ) -> str:
-    """Generate AI response using OpenAI API"""
+    """Generate AI response using OpenAI API with Tool Calling capabilities"""
     try:
         # Fetch current tasks for context
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
         
-        # Get Today's Date so AI can calculate "Next 10 days"
+        # Get Today's Date
         today_date = datetime.now().strftime("%Y-%m-%d")
-        # Enhanced system prompt with DATE AWARENESS
+
+        # --- TOOL DEFINITION ---
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "update_task_field",
+                    "description": "Update a specific detail (status, priority, assigned_to, end_date) of a project task.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "task_name": {"type": "string", "description": "The exact name of the task."},
+                            "field_type": {"type": "string", "enum": ["status", "priority", "assigned_to", "end_date"]},
+                            "new_value": {"type": "string", "description": "The new value to set."}
+                        },
+                        "required": ["task_name", "field_type", "new_value"]
+                    }
+                }
+            }
+        ]
+
+        # Enhanced system prompt with DATE AWARENESS + TOOL INSTRUCTIONS
         system_prompt = f"""You are a helpful project management assistant. 
         
         CONTEXT:
@@ -61,13 +83,13 @@ def generate_ai_response(
         
         TASK LIST:
         {tasks_context}
+        
         INSTRUCTIONS:
-        - Search through the task list carefully
+        - Search through the task list carefully.
         - When users ask about dates (e.g., "due soon", "next 10 days"), compare the 'End Date' in the list with 'Today's Date'.
         - If the user asks about specific people, match names case-insensitively.
-        - Be specific. If a task is overdue (End Date is before Today), mention that.
-        - If tasks are found, list them clearly
-        - If no tasks are found, double-check the assignee names and suggest similar matches
+        - If a user explicitly asks to CHANGE or UPDATE a task (e.g., "Mark X as Done", "Assign Y to John"), use the 'update_task_field' tool.
+        - Be specific. If a task is overdue, mention that.
         """
         
         # Build conversation messages
@@ -75,7 +97,7 @@ def generate_ai_response(
             {"role": "system", "content": system_prompt}
         ]
         
-        # Add conversation history if provided
+        # Add conversation history
         if conversation_history:
             for msg in conversation_history[-5:]:
                 messages.append({"role": "user", "content": str(msg)})
@@ -83,21 +105,59 @@ def generate_ai_response(
         # Add current user message
         messages.append({"role": "user", "content": str(user_message)})
         
-        # Call OpenAI API
+        # --- 1. FIRST API CALL (Check for tools) ---
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
+            tools=tools,           # <--- Added Tools
+            tool_choice="auto",    # <--- Let AI decide
             temperature=0.3,
             max_tokens=500
         )
         
-        return response.choices[0].message.content.strip()
+        response_message = response.choices[0].message
+        tool_calls = response_message.tool_calls
+
+        # --- 2. HANDLE TOOL CALLS (If AI wants to update something) ---
+        if tool_calls:
+            # Append AI's intent to history so it knows it tried to call a function
+            messages.append(response_message)
+
+            for tool_call in tool_calls:
+                function_name = tool_call.function.name
+                
+                if function_name == "update_task_field":
+                    # Parse arguments
+                    function_args = json.loads(tool_call.function.arguments)
+                    
+                    # Execute Python Function
+                    function_response = update_task_field(
+                        task_name=function_args.get("task_name"),
+                        field_type=function_args.get("field_type"),
+                        new_value=function_args.get("new_value")
+                    )
+
+                    # Append Result to Conversation
+                    messages.append({
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_response,
+                    })
+
+            # --- 3. SECOND API CALL (Get final confirmation text) ---
+            second_response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages
+            )
+            return second_response.choices[0].message.content.strip()
+
+        # If no tool was called, return original response
+        return response_message.content.strip()
         
     except Exception as e:
         print(f"❌ Error generating AI response: {e}")
         return "Sorry, I couldn't generate a response at this moment. Please try again."
-
-  
 
 def get_tasks_by_assignee(assignee_name: str) -> str:
     """Get tasks for a specific assignee - useful for direct queries"""
