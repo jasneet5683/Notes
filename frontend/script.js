@@ -78,14 +78,14 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const taskData = {
-        Task_Name: document.getElementById('taskName').value.trim(),
+        task_name: document.getElementById('taskName').value.trim(),
         assigned_to: document.getElementById('assignedTo').value.trim(),
-        Client: document.getElementById('client').value.trim() || 'Not specified',
+        client: document.getElementById('client').value.trim() || 'Not specified',
         start_date: document.getElementById('startDate').value || null,
         end_date: document.getElementById('endDate').value || null,
         status: document.getElementById('status').value,
-        Priority: parseInt(document.getElementById('priority').value) || 1,
-        Notify_Email: document.getElementById('notifyEmail').value.trim() || null
+        priority: parseInt(document.getElementById('priority').value) || 1,
+        notify_email: document.getElementById('notifyEmail').value.trim() || null
     };
     
     try {
