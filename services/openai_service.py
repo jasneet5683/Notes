@@ -6,7 +6,8 @@ from config import OPENAI_API_KEY
 from services.google_sheets_service import (
     fetch_all_tasks, 
     update_task_field, 
-    add_task_from_ai
+    add_task_from_ai,
+    filter_tasks_by_date
 )
 from typing import List, Optional
 from services.email_service import send_email_via_brevo
@@ -121,7 +122,33 @@ def generate_ai_response(
                         "required": ["subject", "email_body"]
                     }
                 }
+            },
+                        # --- TOOL 4: Filter Tasks ---
+            {
+                "type": "function",
+                "function": {
+                    "name": "filter_tasks_by_date",
+                    "description": "Filter and list tasks based on a specific month, year, or exact date. Use this when user asks 'tasks due in March' or 'tasks for today'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "target_month": {
+                                "type": "integer", 
+                                "description": "The month number (1-12). Example: March is 3."
+                            },
+                            "target_year": {
+                                "type": "integer", 
+                                "description": "The 4-digit year. Example: 2026."
+                            },
+                            "target_date": {
+                                "type": "string",
+                                "description": "Specific date in YYYY-MM-DD format. Use this if user asks for a specific day."
+                            }
+                        }
+                    }
+                }
             }
+
         ]
         system_prompt = f"""You are a helpful project management assistant. 
         Today's Date: {today_date}
@@ -198,6 +225,14 @@ def generate_ai_response(
                             email_body=args.get("email_body"),
                             recipient_email=args.get("recipient_email")
                         )
+                        # CASE 4: FILTER TASKS
+                    elif function_name == "filter_tasks_by_date":
+                        print("🔹 Filtering tasks...", flush=True)
+                        function_response = filter_tasks_by_date(
+                            target_month=args.get("target_month"),
+                            target_year=args.get("target_year"),
+                            target_date=args.get("target_date")
+                    )
                     else:
                         print(f"❌ NAME MISMATCH: AI called '{function_name}' but Python expects 'add_task_from_ai'", flush=True)
                         function_response = f"Error: Function {function_name} not found."
