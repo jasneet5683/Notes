@@ -59,8 +59,10 @@ def generate_ai_response(
         # Get Today's Date
         today_date = datetime.now().strftime("%Y-%m-%d")
 
-        # --- TOOL 1 Update Task ---
+        
+       # --- TOOL DEFINITIONS ---
         tools = [
+            # --- TOOL 1: Update Task ---
             {
                 "type": "function",
                 "function": {
@@ -76,14 +78,13 @@ def generate_ai_response(
                         "required": ["task_name", "field_type", "new_value"]
                     }
                 }
-            }
-        ]
-
-         # Tool 2: Add Task
+            },  # <--- FIXED: Added comma here
+        
+            # --- TOOL 2: Add Task ---
             {
                 "type": "function",
                 "function": {
-                    "name": "add_task_to_sheet",
+                    "name": "add_task_from_ai", # <--- Make sure this matches your Python function name
                     "description": "Add a brand new task to the project tracker.",
                     "parameters": {
                         "type": "object",
@@ -91,14 +92,16 @@ def generate_ai_response(
                             "task_name": {"type": "string", "description": "The name of the new task."},
                             "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned' if not specified."},
                             "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level. Default 'Medium'."},
-                            "end_date": {"type": "string", "description": "Due date in YYYY-MM-DD format. Leave empty if not specified."}
-                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name. Leave empty if not specified."},
+                            "end_date": {"type": "string", "description": "Due date in YYYY-MM-DD format. Leave empty if not specified."}, # <--- FIXED: Added comma here
+                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name. Leave empty if not specified."}
                         },
                         "required": ["task_name"]
                     }
                 }
             }
         ]
+
+        
 
         
         # Enhanced system prompt with DATE AWARENESS + TOOL INSTRUCTIONS
