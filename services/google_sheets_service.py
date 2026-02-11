@@ -96,7 +96,7 @@ def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: 
             end_date=end_date,
             status="Pending",
             assigned_to=assigned_to,
-            client="General", 
+            client=client, 
             priority=priority
         )
         # 3. Call your EXISTING function
