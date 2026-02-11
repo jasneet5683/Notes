@@ -13,3 +13,4 @@ jinja2
 pydub
 langchain-openai
 matplotlib
+sib-api-v3-sdk
