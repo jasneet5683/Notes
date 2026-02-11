@@ -201,60 +201,59 @@ def update_task_field(task_name: str, field_type: str, new_value: str) -> str:
 # Filter tasks by Date
 
 def filter_tasks_by_date(target_month: int = None, target_year: int = None, target_date: str = None) -> str:
-    """
-    Filters tasks with robust date parsing and debugging.
-    """
     tasks = fetch_all_tasks()
     if not tasks:
         return "No tasks found in database."
     filtered_results = []
     
-    # List of formats to try matching against your Google Sheet data
-    possible_formats = [
-        "%Y-%m-%d",  # 2026-03-20
-        "%d-%m-%Y",  # 20-03-2026
-        "%m/%d/%Y",  # 03/20/2026
-        "%d/%m/%Y",  # 20/03/2026
-        "%Y/%m/%d"   # 2026/03/20
-    ]
-    print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}, Date={target_date}")
-    for task in tasks:
-        # 1. Get the date string safely
-        raw_date_str = str(task.get("End Date", "")).strip()
+    # Standard formats
+    possible_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d"]
+    print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}")
+    for index, task in enumerate(tasks):
+        # DEBUG: Print keys for the first row only to check for typos/spaces
+        if index == 0:
+            print(f"DEBUG: Column Headers found in sheet: {list(task.keys())}")
+        # Try to find the date key flexibly (ignores spaces/case)
+        date_value = None
+        for key in task.keys():
+            if key.strip().lower() == "end date":
+                date_value = task[key]
+                break
         
-        # If empty, skip
+        # 1. Get string safely
+        # .strip("'") removes the single quote if the sheet literally contains '2026-03-20
+        raw_date_str = str(date_value or "").strip().strip("'")
+        
         if not raw_date_str:
+            # Only print if we expected data but got none
+            # print(f"DEBUG: Row {index} has empty date.") 
             continue
         parsed_date = None
-        # 2. Try to parse using multiple formats
+        # 2. Try to parse
         for fmt in possible_formats:
             try:
                 parsed_date = datetime.strptime(raw_date_str, fmt)
-                break # Found a matching format!
+                break 
             except ValueError:
-                continue # Try next format
+                continue 
         
-        # 3. If we couldn't parse the date at all, log it and skip
         if not parsed_date:
-            print(f"DEBUG: Could not parse date: '{raw_date_str}'")
+            print(f"DEBUG: Row {index} - Could not parse date: '{raw_date_str}'")
             continue
-        # 4. Check Criteria
+        # 3. Check Match
         match = True
         
-        # Filter by exact date
         if target_date:
-            # We convert our parsed object back to YYYY-MM-DD to compare with AI's target
             normalized_date_str = parsed_date.strftime("%Y-%m-%d")
             if normalized_date_str != target_date:
                 match = False
         
-        # Filter by Month and Year
         if target_month and target_year:
             if parsed_date.month != target_month or parsed_date.year != target_year:
                 match = False
         if match:
-            print(f"DEBUG: Match found! {task.get('Task Name')}")
-            filtered_results.append(f"- {task.get('Task Name')} (Due: {raw_date_str}, Status: {task.get('Status')}, Priority: {task.get('Priority')})")
+            print(f"DEBUG: Match found! {task.get('Task Name', 'Unknown Task')}")
+            filtered_results.append(f"- {task.get('Task Name', 'Unknown')} (Due: {raw_date_str}, Status: {task.get('Status', 'Unknown')})")
     if not filtered_results:
         return "No tasks found matching that date criteria."
     return "Here are the matching tasks:\n" + "\n".join(filtered_results)
