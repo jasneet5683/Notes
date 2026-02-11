@@ -79,7 +79,7 @@ def add_task_to_sheet(task: TaskInput) -> bool:
         return False
 
 #----- New AI Wrapper function
-def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", end_date: str = "") -> str:
+def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", end_date: str = "", client: str = "Unknown") -> str:
     """
     Wrapper for AI to add tasks. 
     Converts string arguments into a TaskInput object and calls the main function.
