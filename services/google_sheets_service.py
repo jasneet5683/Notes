@@ -209,24 +209,12 @@ def filter_tasks_by_date(target_month: int = None, target_year: int = None, targ
     # Standard formats
     possible_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d"]
     print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}")
-    for index, task in enumerate(tasks):
-        # DEBUG: Print keys for the first row only to check for typos/spaces
-        if index == 0:
-            print(f"DEBUG: Column Headers found in sheet: {list(task.keys())}")
-        # Try to find the date key flexibly (ignores spaces/case)
-        date_value = None
-        for key in task.keys():
-            if key.strip().lower() == "end date":
-                date_value = task[key]
-                break
-        
-        # 1. Get string safely
-        # .strip("'") removes the single quote if the sheet literally contains '2026-03-20
-        raw_date_str = str(date_value or "").strip().strip("'")
+    for task in tasks:
+        # 1. Get the date string using the CORRECT column key: 'end_date'
+        # We use .get('end_date') directly based on your logs
+        raw_date_str = str(task.get("end_date", "")).strip().strip("'")
         
         if not raw_date_str:
-            # Only print if we expected data but got none
-            # print(f"DEBUG: Row {index} has empty date.") 
             continue
         parsed_date = None
         # 2. Try to parse
@@ -238,7 +226,7 @@ def filter_tasks_by_date(target_month: int = None, target_year: int = None, targ
                 continue 
         
         if not parsed_date:
-            print(f"DEBUG: Row {index} - Could not parse date: '{raw_date_str}'")
+            print(f"DEBUG: Could not parse date: '{raw_date_str}'")
             continue
         # 3. Check Match
         match = True
@@ -252,8 +240,13 @@ def filter_tasks_by_date(target_month: int = None, target_year: int = None, targ
             if parsed_date.month != target_month or parsed_date.year != target_year:
                 match = False
         if match:
-            print(f"DEBUG: Match found! {task.get('Task Name', 'Unknown Task')}")
-            filtered_results.append(f"- {task.get('Task Name', 'Unknown')} (Due: {raw_date_str}, Status: {task.get('Status', 'Unknown')})")
+            # We also update these keys to match your logs: 'Task_Name', 'status', 'Priority'
+            task_name = task.get("Task_Name", "Unknown")
+            status = task.get("status", "Unknown")
+            priority = task.get("Priority", "Unknown")
+            
+            print(f"DEBUG: Match found! {task_name}")
+            filtered_results.append(f"- {task_name} (Due: {raw_date_str}, Status: {status}, Priority: {priority})")
     if not filtered_results:
         return "No tasks found matching that date criteria."
     return "Here are the matching tasks:\n" + "\n".join(filtered_results)
