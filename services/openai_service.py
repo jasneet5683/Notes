@@ -9,6 +9,7 @@ from services.google_sheets_service import (
     add_task_from_ai
 )
 from typing import List, Optional
+from services.email_service import send_email_via_brevo
 import sys
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -59,6 +60,7 @@ def generate_ai_response(
         today_date = datetime.now().strftime("%Y-%m-%d")
         # --- TOOL DEFINITIONS ---
         tools = [
+             # --- TOOL 1: Update Task ---
             {
                 "type": "function",
                 "function": {
@@ -75,6 +77,7 @@ def generate_ai_response(
                     }
                 }
             },
+             # --- TOOL 2: Add Task ---
             {
                 "type": "function",
                 "function": {
@@ -90,6 +93,32 @@ def generate_ai_response(
                             "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name."}
                         },
                         "required": ["task_name"]
+                    }
+                }
+            },
+             # --- TOOL 3: Send Email ---
+            {
+                "type": "function",
+                "function": {
+                    "name": "send_project_email",
+                    "description": "Send an email. Use this when the user asks to email a summary, report, or notification.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "recipient_email": {
+                                "type": "string", 
+                                "description": "The email address of the recipient. If not specified, leave empty (backend will use default admin)."
+                            },
+                            "subject": {
+                                "type": "string", 
+                                "description": "The subject line of the email."
+                            },
+                            "email_body": {
+                                "type": "string", 
+                                "description": "The full content of the email. If the user asks for a summary, YOU (the AI) must generate the summary text here."
+                            }
+                        },
+                        "required": ["subject", "email_body"]
                     }
                 }
             }
@@ -152,7 +181,7 @@ def generate_ai_response(
                             new_value=args.get("new_value")
                         )
                     
-                    # CHECK FOR BOTH NAMES TO PREVENT ERRORS
+                    # Case 2: Add Task
                     elif function_name == "add_task_from_ai" or function_name == "add_task_to_sheet":
                         function_response = add_task_from_ai(
                             task_name=args.get("task_name"),
@@ -160,6 +189,14 @@ def generate_ai_response(
                             priority=args.get("priority", "Medium"),
                             end_date=args.get("end_date", ""),
                             client=args.get("client", "General")
+                        )
+                         # CASE 3: SEND EMAIL
+                    elif function_name == "send_project_email":
+                        print("🔹 Attempting to send email...", flush=True)
+                        function_response = send_email_via_brevo(
+                            subject=args.get("subject"),
+                            email_body=args.get("email_body"),
+                            recipient_email=args.get("recipient_email")
                         )
                     else:
                         print(f"❌ NAME MISMATCH: AI called '{function_name}' but Python expects 'add_task_from_ai'", flush=True)
