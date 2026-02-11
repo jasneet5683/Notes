@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes - Task Management</title>
-    <!-- 1. IMPORT LIBRARIES FOR CHARTS AND MARKDOWN -->
+    
+    <!-- 1. NEW LIBRARIES ADDED HERE -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -77,13 +78,13 @@
         .status.completed { background: #d4edda; color: #155724; border: 1px solid #00b894; }
         
         .chat-container {
-            height: 400px; display: flex; flex-direction: column;
+            height: 500px; display: flex; flex-direction: column; /* Increased height for charts */
         }
         .chat-messages { 
             flex: 1; overflow-y: auto; border: 1px solid #ddd; 
             padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;
         }
-        .message { margin: 12px 0; padding: 12px 16px; border-radius: 18px; max-width: 80%; }
+        .message { margin: 12px 0; padding: 12px 16px; border-radius: 18px; max-width: 85%; }
         .message.user { 
             background: linear-gradient(135deg, #667eea, #764ba2); color: white; 
             margin-left: auto; text-align: right;
@@ -91,8 +92,28 @@
         .message.bot { 
             background: white; border: 1px solid #ddd; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #333;
         }
         
+        /* --- 2. NEW CSS FOR TABLES --- */
+        .message table {
+            width: 100%; border-collapse: collapse; margin: 15px 0;
+            background: white; border-radius: 5px; overflow: hidden;
+            font-size: 0.9em;
+        }
+        .message th, .message td {
+            padding: 10px; border-bottom: 1px solid #eee; text-align: left;
+        }
+        .message th { background: #667eea; color: white; }
+        .message tr:nth-child(even) { background: #f8f9fa; }
+
+        /* --- 3. NEW CSS FOR GRAPHS --- */
+        .chart-wrapper {
+            background: white; border: 1px solid #eee; border-radius: 8px;
+            padding: 10px; margin-top: 10px; height: 300px; width: 100%;
+            position: relative;
+        }
+
         .health-indicator {
             padding: 10px 15px; border-radius: 25px; font-weight: 600;
             display: inline-block; margin: 10px 0;
@@ -109,26 +130,7 @@
         .search-results {
             max-height: 300px; overflow-y: auto;
         }
-
-        /* --- 2. NEW STYLES FOR TABLES --- */
-        .message table {
-            width: 100%; border-collapse: collapse; margin: 15px 0;
-            font-size: 0.9em; min-width: 300px;
-            border-radius: 8px; overflow: hidden;
-        }
-        .message th, .message td {
-            padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd;
-        }
-        .message th { background-color: #667eea; color: white; }
-        .message tr:nth-of-type(even) { background-color: #f3f3f3; }
-        .message tr:last-of-type { border-bottom: 2px solid #667eea; }
-       
-        /* --- 3. NEW STYLES FOR CHARTS --- */
-        .chart-wrapper {
-            background: white; border: 1px solid #eee; border-radius: 8px;
-            padding: 10px; margin-top: 10px; height: 300px; width: 100%;
-            position: relative;
-        }
+        
         @media (max-width: 768px) { 
             .grid, .grid-3 { grid-template-columns: 1fr; }
             .header h1 { font-size: 2em; }
@@ -157,12 +159,13 @@
             </div>
             <div id="summaryDisplay"></div>
         </div>
-<!-- AI CHAT ASSISTANT -->
+        
+        <!-- AI CHAT ASSISTANT -->
         <div class="section">
             <h2>🤖 AI Project Assistant</h2>
             <div class="chat-container">
                 <div id="chatMessages" class="chat-messages">
-                    <div class="message bot">👋 Hi! I'm your AI assistant. Ask me about your tasks, project status, or anything related to project management!</div>
+                    <div class="message bot">👋 Hi! Ask me to "List tasks in a table" or "Show me a pie chart of status".</div>
                 </div>
                 <form id="chatForm" onsubmit="sendChat(event)">
                     <div class="grid">
@@ -175,46 +178,43 @@
     
         <!-- ADD NEW TASK -->
         <div class="section">
-    <h2>➕ Create New Task</h2>
-    <form id="taskForm">
-        <div class="grid">
-            <input id="taskName" placeholder="Task Name *" required>
-            <input id="assignedTo" placeholder="Assigned To *" required>
+            <h2>➕ Create New Task</h2>
+            <form id="taskForm">
+                <div class="grid">
+                    <input id="taskName" placeholder="Task Name *" required>
+                    <input id="assignedTo" placeholder="Assigned To *" required>
+                </div>
+                <div class="grid">
+                    <select id="client">
+                        <option value="Etisalat">Etisalat</option>
+                        <option value="DU">DU</option>
+                        <option value="Batelco">Batelco</option>
+                        <option value="Not specified">Other</option>
+                    </select> 
+                    <input id="notifyEmail" type="email" placeholder="Notification Email">
+                </div>
+                <div class="grid">
+                    <input type="date" id="startDate" title="Start Date">
+                    <input type="date" id="endDate" title="End Date">
+                </div>
+                
+                <select id="status">
+                    <option value="Pending">📋 Pending</option>
+                    <option value="In Progress">⚡ In Progress</option>
+                    <option value="Completed">✅ Completed</option>
+                </select>
+                
+                <select id="priority">
+                    <option value="Blocker">Blocker</option>
+                    <option value="Critical" selected>Critical</option>
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                    <option value="Info">Info</option>
+                </select>
+                <button type="submit">🚀 Create Task</button>
+            </form>
         </div>
-        <div class="grid">
-             <!-- Client Dropdown -->
-            <select id="client">
-                <option value="Etisalat">Etisalat</option>
-                <option value="DU">DU</option>
-                <option value="Batelco">Batelco</option>
-                <option value="Not specified">Other</option>
-            </select> 
-            <input id="notifyEmail" type="email" placeholder="Notification Email">
-        </div>
-        <div class="grid">
-            <input type="date" id="startDate" title="Start Date">
-            <input type="date" id="endDate" title="End Date">
-        </div>
-        
-        <!-- Status Dropdown -->
-        <select id="status">
-            <option value="Pending">📋 Pending</option>
-            <option value="In Progress">⚡ In Progress</option>
-            <option value="Completed">✅ Completed</option>
-        </select>
-        
-        <!-- Priority Dropdown -->
-        <select id="priority">
-            <option value="Blocker">Blocker</option>
-            <option value="Critical" selected>Critical</option>
-            <option value="High">High Priority</option>
-            <option value="Medium">Medium Priority</option>
-            <option value="Low">Low Priority</option>
-            <option value="Info">Info</option>
-        </select>
-        <button type="submit">🚀 Create Task</button>
-    </form>
-</div>
 
         <!-- SEARCH TASKS -->
         <div class="section">
@@ -236,9 +236,8 @@
             </div>
             <div id="taskList" class="loading">Loading tasks...</div>
         </div>
-</div>
+    </div>
         
-
     <script type="module" src="script.js"></script>
 </body>
 </html>
