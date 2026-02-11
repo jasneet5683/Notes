@@ -60,9 +60,9 @@ def generate_ai_response(
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
         today_date = datetime.now().strftime("%Y-%m-%d")
+
         # --- TOOL DEFINITIONS ---
         tools = [
-             # --- TOOL 1: Update Task ---
             {
                 "type": "function",
                 "function": {
@@ -79,11 +79,10 @@ def generate_ai_response(
                     }
                 }
             },
-             # --- TOOL 2: Add Task ---
             {
                 "type": "function",
                 "function": {
-                    "name": "add_task_from_ai", # <--- Ensure this name is used below
+                    "name": "add_task_from_ai",
                     "description": "Add a brand new task to the project tracker.",
                     "parameters": {
                         "type": "object",
@@ -98,7 +97,6 @@ def generate_ai_response(
                     }
                 }
             },
-             # --- TOOL 3: Send Email ---
             {
                 "type": "function",
                 "function": {
@@ -124,18 +122,17 @@ def generate_ai_response(
                     }
                 }
             },
-                        # --- TOOL 4: Filter Tasks ---
             {
                 "type": "function",
                 "function": {
                     "name": "filter_tasks_by_date",
-                    "description": "Filter and list tasks based on a specific month, year, or exact date. Use this when user asks 'tasks due in March' or 'tasks for today'.",
+                    "description": "Filter and list tasks based on a specific month, year, or exact date.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "target_month": {
                                 "type": "integer", 
-                                "description": "The month number (1-12). Example: March is 3."
+                                "description": "The month number (1-12)."
                             },
                             "target_year": {
                                 "type": "integer", 
@@ -143,25 +140,24 @@ def generate_ai_response(
                             },
                             "target_date": {
                                 "type": "string",
-                                "description": "Specific date in YYYY-MM-DD format. Use this if user asks for a specific day."
+                                "description": "Specific date in YYYY-MM-DD format."
                             }
                         }
                     }
                 }
             },
-            # -- Tool 5: Stats for Graph generation
             {
                 "type": "function",
                 "function": {
                     "name": "get_task_statistics",
-                    "description": "Get counts of tasks. useful for generating graphs.",
+                    "description": "Get counts of tasks. Useful for generating graphs.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "group_by": {
                                 "type": "string",
                                 "enum": ["status", "priority", "assigned_to", "month"],
-                                "description": "What to count. Use 'month' for time trends. Use 'assigned_to' for resource allocation."
+                                "description": "What to count. Use 'month' for time trends."
                             },
                             "target_month": {
                                 "type": "integer", 
@@ -177,38 +173,36 @@ def generate_ai_response(
                 }
             }
         ]
+
+        # ---------------------------------------------------------
+        # ⚠️ FIX APPLIED BELOW: JSON braces { } replaced with {{ }}
+        # ---------------------------------------------------------
         system_prompt = f"""You are a helpful project management assistant. 
         Today's Date: {today_date}
         TASK LIST:
         {tasks_context}
         INSTRUCTIONS:
         - Search through the task list carefully.
-        - When users ask about dates (e.g., "due soon", "next 10 days"), compare the 'End Date' in the list with 'Today's Date'.
-        - If the user asks about specific people, match names case-insensitively.
-        - If a user explicitly asks to CHANGE or UPDATE a task (e.g., "Mark X as Done", "Assign Y to John"), use the 'update_task_field' tool.
-        - Be specific. If a task is overdue, mention that.
+        - When users ask about dates, compare the 'End Date' in the list with 'Today's Date'.
+        - If a user explicitly asks to CHANGE or UPDATE a task, use the 'update_task_field' tool.
+        
         FORMATTING RULES:
-        1. TABLES: If the user wants a list or comparison, output a standard Markdown Table.
-           Example:
-           | Task | Status |
-           |------|--------|
-           | Bug  | Open   |
+        1. TABLES: If the user wants a list, output a Markdown Table.
         2. GRAPHS: If the user asks for a chart/graph, call 'get_task_statistics' first. 
         Then, output the data in this EXACT JSON format inside a code block:
            ```chart
-       {    
-         "type": "bar",
-         "data": {
-           "labels": ["Pending", "Done", "InProgress"],
-           "datasets": [{
-             "label": "Task Status",
-             "data": [5, 3, 2],
-             "backgroundColor": ["#FF6384", "#36A2EB", "#FFCE56"]
-           }]
-         }
-       }
-
-        
+           {{
+             "type": "bar",
+             "data": {{
+               "labels": ["Pending", "Done", "InProgress"],
+               "datasets": [{{
+                 "label": "Task Status",
+                 "data": [5, 3, 2],
+                 "backgroundColor": ["#FF6384", "#36A2EB", "#FFCE56"]
+               }}]
+             }}
+           }}
+           ```
         """
         
         messages = [{"role": "system", "content": system_prompt}]
@@ -231,6 +225,7 @@ def generate_ai_response(
         
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
+
         # --- 2. HANDLE TOOL CALLS ---
         if tool_calls:
             messages.append(response_message)
@@ -239,15 +234,16 @@ def generate_ai_response(
                 function_name = tool_call.function.name
                 tool_id = tool_call.id
                 
-                # Force print to Railway logs
                 print(f"🔹 AI CALLED FUNCTION: {function_name}", flush=True)
-                print(f"🔹 ARGS: {tool_call.function.arguments}", flush=True)
+                
                 try:
                     args = json.loads(tool_call.function.arguments)
                 except Exception as json_err:
                     print(f"❌ JSON Parse Error: {json_err}", flush=True)
                     args = {}
-                function_response = "Error: Unknown function." # Default
+                
+                function_response = "Error: Unknown function." 
+
                 # EXECUTE PYTHON CODE
                 try:
                     if function_name == "update_task_field":
@@ -257,7 +253,6 @@ def generate_ai_response(
                             new_value=args.get("new_value")
                         )
                     
-                    # Case 2: Add Task
                     elif function_name == "add_task_from_ai" or function_name == "add_task_to_sheet":
                         function_response = add_task_from_ai(
                             task_name=args.get("task_name"),
@@ -266,7 +261,7 @@ def generate_ai_response(
                             end_date=args.get("end_date", ""),
                             client=args.get("client", "General")
                         )
-                         # CASE 3: SEND EMAIL
+                        
                     elif function_name == "send_project_email":
                         print("🔹 Attempting to send email...", flush=True)
                         function_response = send_email_via_brevo(
@@ -274,29 +269,33 @@ def generate_ai_response(
                             email_body=args.get("email_body"),
                             recipient_email=args.get("recipient_email")
                         )
-                        # CASE 4: FILTER TASKS
+
                     elif function_name == "filter_tasks_by_date":
                         print("🔹 Filtering tasks...", flush=True)
                         function_response = filter_tasks_by_date(
                             target_month=args.get("target_month"),
                             target_year=args.get("target_year"),
                             target_date=args.get("target_date")
-                    )
-                    # CASE 5: Filter for Stats
+                        )
+
                     elif function_name == "get_task_statistics":
                         print("🔹 Calculating stats...", flush=True)
                         function_response = get_task_statistics(
                             group_by=args.get("group_by"),
                             target_month=args.get("target_month"),
                             target_year=args.get("target_year")
-                    )
+                        )
+                        
                     else:
-                        print(f"❌ NAME MISMATCH: AI called '{function_name}' but Python expects 'add_task_from_ai'", flush=True)
+                        print(f"❌ NAME MISMATCH: {function_name}", flush=True)
                         function_response = f"Error: Function {function_name} not found."
+
                 except Exception as e:
                     print(f"❌ EXECUTION ERROR: {e}", flush=True)
                     function_response = f"Error executing tool: {str(e)}"
+                
                 print(f"🔹 FUNCTION RESULT: {function_response}", flush=True)
+                
                 # APPEND RESULT
                 messages.append({
                     "tool_call_id": tool_id,
@@ -304,12 +303,14 @@ def generate_ai_response(
                     "name": function_name,
                     "content": str(function_response),
                 })
+
             # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages
             )
             return second_response.choices[0].message.content.strip()
+        
         return response_message.content.strip()
         
     except Exception as e:
