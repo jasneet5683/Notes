@@ -202,43 +202,59 @@ def update_task_field(task_name: str, field_type: str, new_value: str) -> str:
 
 def filter_tasks_by_date(target_month: int = None, target_year: int = None, target_date: str = None) -> str:
     """
-    Filters tasks based on a specific date, or a month/year combination.
+    Filters tasks with robust date parsing and debugging.
     """
     tasks = fetch_all_tasks()
     if not tasks:
         return "No tasks found in database."
-
     filtered_results = []
     
+    # List of formats to try matching against your Google Sheet data
+    possible_formats = [
+        "%Y-%m-%d",  # 2026-03-20
+        "%d-%m-%Y",  # 20-03-2026
+        "%m/%d/%Y",  # 03/20/2026
+        "%d/%m/%Y",  # 20/03/2026
+        "%Y/%m/%d"   # 2026/03/20
+    ]
+    print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}, Date={target_date}")
     for task in tasks:
-        # Assuming date format in Sheet is YYYY-MM-DD
-        end_date_str = str(task.get("End Date", "")).strip()
+        # 1. Get the date string safely
+        raw_date_str = str(task.get("End Date", "")).strip()
         
-        try:
-            # Parse the date from the sheet
-            task_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-            
-            match = True
-            
-            # Filter by exact date
-            if target_date:
-                if end_date_str != target_date:
-                    match = False
-            
-            # Filter by Month and Year
-            if target_month and target_year:
-                if task_date.month != target_month or task_date.year != target_year:
-                    match = False
-
-            if match:
-                filtered_results.append(f"- {task.get('Task Name')} (Due: {end_date_str}, Status: {task.get('Status')})")
-
-        except ValueError:
-            # Skip rows where date is missing or invalid format
+        # If empty, skip
+        if not raw_date_str:
             continue
-
+        parsed_date = None
+        # 2. Try to parse using multiple formats
+        for fmt in possible_formats:
+            try:
+                parsed_date = datetime.strptime(raw_date_str, fmt)
+                break # Found a matching format!
+            except ValueError:
+                continue # Try next format
+        
+        # 3. If we couldn't parse the date at all, log it and skip
+        if not parsed_date:
+            print(f"DEBUG: Could not parse date: '{raw_date_str}'")
+            continue
+        # 4. Check Criteria
+        match = True
+        
+        # Filter by exact date
+        if target_date:
+            # We convert our parsed object back to YYYY-MM-DD to compare with AI's target
+            normalized_date_str = parsed_date.strftime("%Y-%m-%d")
+            if normalized_date_str != target_date:
+                match = False
+        
+        # Filter by Month and Year
+        if target_month and target_year:
+            if parsed_date.month != target_month or parsed_date.year != target_year:
+                match = False
+        if match:
+            print(f"DEBUG: Match found! {task.get('Task Name')}")
+            filtered_results.append(f"- {task.get('Task Name')} (Due: {raw_date_str}, Status: {task.get('Status')}, Priority: {task.get('Priority')})")
     if not filtered_results:
         return "No tasks found matching that date criteria."
-
     return "Here are the matching tasks:\n" + "\n".join(filtered_results)
-
