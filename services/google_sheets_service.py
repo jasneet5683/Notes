@@ -6,6 +6,7 @@ from config import GOOGLE_SHEETS_CREDENTIALS, SPREADSHEET_ID
 from models.schemas import TaskInput, TaskUpdate
 from typing import List, Dict, Optional
 from datetime import datetime
+from collections import Counter
 
 # Initialize Google Sheets connection
 def get_google_sheet():
@@ -250,3 +251,67 @@ def filter_tasks_by_date(target_month: int = None, target_year: int = None, targ
     if not filtered_results:
         return "No tasks found matching that date criteria."
     return "Here are the matching tasks:\n" + "\n".join(filtered_results)
+
+#--- Function for Stats
+def get_task_statistics(group_by: str = "status", target_month: int = None, target_year: int = None) -> str:
+    """
+    Calculates statistics.
+    group_by options: 'status', 'priority', 'assigned_to', 'month'.
+    target_month/year: Optional filters (e.g., "Get status counts for March only").
+    """
+    tasks = fetch_all_tasks()
+    if not tasks:
+        return "{}"
+    # 1. Define Date Parsing Helper (Same robust logic as before)
+    possible_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d"]
+    
+    def parse_date(date_str):
+        if not date_str: return None
+        date_str = str(date_str).strip().strip("'")
+        for fmt in possible_formats:
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
+    # 2. Filter List (if Month/Year provided)
+    filtered_tasks = []
+    for task in tasks:
+        # Get raw date string from 'end_date' key
+        raw_date = task.get("end_date", "") 
+        dt_obj = parse_date(raw_date)
+        
+        # If filtering is requested, check the date
+        if target_month and target_year:
+            if not dt_obj: continue # Skip invalid dates if filtering
+            if dt_obj.month != target_month or dt_obj.year != target_year:
+                continue
+        
+        # Add a helper 'parsed_date_obj' to the task dict for the next step
+        task['_dt_obj'] = dt_obj 
+        filtered_tasks.append(task)
+    # 3. Grouping Logic
+    values = []
+    
+    if group_by == "month":
+        # Strategy: Extract "MMM-YYYY" from every task
+        for task in filtered_tasks:
+            dt = task.get('_dt_obj')
+            if dt:
+                values.append(dt.strftime("%b-%Y")) # e.g., "Mar-2026"
+            else:
+                values.append("No Date")
+                
+    else:
+        # Standard columns: Status, Priority, Assigned To
+        key_map = {
+            "status": "status",
+            "priority": "Priority",
+            "assigned_to": "assigned_to"
+        }
+        target_key = key_map.get(group_by.lower(), "status")
+        values = [str(task.get(target_key, "Unknown")) for task in filtered_tasks]
+    # 4. Count and Return
+    counts = Counter(values)
+    return str(dict(counts))
+
