@@ -3,7 +3,11 @@ import json
 from datetime import datetime
 from openai import OpenAI
 from config import OPENAI_API_KEY
-from services.google_sheets_service import fetch_all_tasks, update_task_field
+from services.google_sheets_service import (
+    fetch_all_tasks, 
+    update_task_field, 
+    add_task_from_ai
+)
 from typing import List, Optional
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -55,7 +59,7 @@ def generate_ai_response(
         # Get Today's Date
         today_date = datetime.now().strftime("%Y-%m-%d")
 
-        # --- TOOL DEFINITION ---
+        # --- TOOL 1 Update Task ---
         tools = [
             {
                 "type": "function",
@@ -75,6 +79,28 @@ def generate_ai_response(
             }
         ]
 
+         # Tool 2: Add Task
+            {
+                "type": "function",
+                "function": {
+                    "name": "add_task_to_sheet",
+                    "description": "Add a brand new task to the project tracker.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "task_name": {"type": "string", "description": "The name of the new task."},
+                            "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned' if not specified."},
+                            "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level. Default 'Medium'."},
+                            "end_date": {"type": "string", "description": "Due date in YYYY-MM-DD format. Leave empty if not specified."}
+                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name. Leave empty if not specified."},
+                        },
+                        "required": ["task_name"]
+                    }
+                }
+            }
+        ]
+
+        
         # Enhanced system prompt with DATE AWARENESS + TOOL INSTRUCTIONS
         system_prompt = f"""You are a helpful project management assistant. 
         
@@ -125,7 +151,7 @@ def generate_ai_response(
 
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
-                
+                # Case 1: Update Task
                 if function_name == "update_task_field":
                     # Parse arguments
                     function_args = json.loads(tool_call.function.arguments)
@@ -137,6 +163,15 @@ def generate_ai_response(
                         new_value=function_args.get("new_value")
                     )
 
+                # CASE 2: ADD TASK
+                elif function_name == "add_task_to_sheet":
+                    # Make sure to import add_task_to_sheet at the top of the file!
+                    function_response = add_task_to_sheet(
+                        task_name=args.get("task_name"),
+                        assigned_to=args.get("assigned_to", "Unassigned"),
+                        priority=args.get("priority", "Medium"),
+                        end_date=args.get("end_date", "")
+                    )
                     # Append Result to Conversation
                     messages.append({
                         "tool_call_id": tool_call.id,
