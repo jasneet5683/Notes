@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes - Task Management</title>
+    <!-- 1. IMPORT LIBRARIES FOR CHARTS AND MARKDOWN -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -105,7 +109,26 @@
         .search-results {
             max-height: 300px; overflow-y: auto;
         }
-        
+
+        /* --- 2. NEW STYLES FOR TABLES --- */
+        .message table {
+            width: 100%; border-collapse: collapse; margin: 15px 0;
+            font-size: 0.9em; min-width: 300px;
+            border-radius: 8px; overflow: hidden;
+        }
+        .message th, .message td {
+            padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd;
+        }
+        .message th { background-color: #667eea; color: white; }
+        .message tr:nth-of-type(even) { background-color: #f3f3f3; }
+        .message tr:last-of-type { border-bottom: 2px solid #667eea; }
+       
+        /* --- 3. NEW STYLES FOR CHARTS --- */
+        .chart-wrapper {
+            background: white; border: 1px solid #eee; border-radius: 8px;
+            padding: 10px; margin-top: 10px; height: 300px; width: 100%;
+            position: relative;
+        }
         @media (max-width: 768px) { 
             .grid, .grid-3 { grid-template-columns: 1fr; }
             .header h1 { font-size: 2em; }
