@@ -148,47 +148,67 @@ def generate_ai_response(
         tool_calls = response_message.tool_calls
 
         # --- 2. HANDLE TOOL CALLS (If AI wants to update something) ---
+        
         if tool_calls:
-            # Append AI's intent to history so it knows it tried to call a function
+            # 1. Add the AI's "Request" to the history
             messages.append(response_message)
 
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
-                # Case 1: Update Task
-                if function_name == "update_task_field":
-                    # Parse arguments
-                    function_args = json.loads(tool_call.function.arguments)
+                tool_id = tool_call.id # <--- CRITICAL: We need this ID
+                
+                # specific args
+                try:
+                    args = json.loads(tool_call.function.arguments)
+                except:
+                    args = {}
+
+                function_response = "Error: Function executed but returned no result." # Default
+
+                print(f"🔹 AI is trying to call: {function_name}") # Debug print
+
+                try:
+                    # CASE 1: UPDATE TASK
+                    if function_name == "update_task_field":
+                        function_response = update_task_field(
+                            task_name=args.get("task_name"),
+                            field_type=args.get("field_type"),
+                            new_value=args.get("new_value")
+                        )
+
+                    # CASE 2: ADD TASK
+                    # Check BOTH names just to be safe in case JSON def is different
+                    elif function_name == "add_task_from_ai" or function_name == "add_task_to_sheet":
+                        function_response = add_task_from_ai(
+                            task_name=args.get("task_name"),
+                            assigned_to=args.get("assigned_to", "Unassigned"),
+                            priority=args.get("priority", "Medium"),
+                            end_date=args.get("end_date", ""),
+                            client=args.get("client", "General")
+                        )
                     
-                    # Execute Python Function
-                    function_response = update_task_field(
-                        task_name=function_args.get("task_name"),
-                        field_type=function_args.get("field_type"),
-                        new_value=function_args.get("new_value")
-                    )
+                    # CASE 3: UNKNOWN FUNCTION
+                    else:
+                        function_response = f"Error: The function '{function_name}' does not exist in the backend."
 
-                # CASE 2: ADD TASK
-                elif function_name == "add_task_to_sheet":
-                    # Make sure to import add_task_to_sheet at the top of the file!
-                    function_response = add_task_to_sheet(
-                        task_name=args.get("task_name"),
-                        assigned_to=args.get("assigned_to", "Unassigned"),
-                        priority=args.get("priority", "Medium"),
-                        end_date=args.get("end_date", "")
-                    )
-                    # Append Result to Conversation
-                    messages.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                    })
+                except Exception as tool_error:
+                    function_response = f"Error executing tool: {str(tool_error)}"
 
-            # --- 3. SECOND API CALL (Get final confirmation text) ---
+                # --- CRITICAL STEP: ALWAYS APPEND THE RESULT ---
+                messages.append({
+                    "tool_call_id": tool_id, # MUST MATCH THE ID FROM OPENAI
+                    "role": "tool",
+                    "name": function_name,
+                    "content": str(function_response), # Content must be a string
+                })
+
+            # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages
             )
             return second_response.choices[0].message.content.strip()
+
 
         # If no tool was called, return original response
         return response_message.content.strip()
