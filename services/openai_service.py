@@ -7,7 +7,8 @@ from services.google_sheets_service import (
     fetch_all_tasks, 
     update_task_field, 
     add_task_from_ai,
-    filter_tasks_by_date
+    filter_tasks_by_date,
+    get_task_statistics
 )
 from typing import List, Optional
 from services.email_service import send_email_via_brevo
@@ -147,8 +148,34 @@ def generate_ai_response(
                         }
                     }
                 }
+            },
+            # -- Tool 5: Stats for Graph generation
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_task_statistics",
+                    "description": "Get counts of tasks. useful for generating graphs.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "group_by": {
+                                "type": "string",
+                                "enum": ["status", "priority", "assigned_to", "month"],
+                                "description": "What to count. Use 'month' for time trends. Use 'assigned_to' for resource allocation."
+                            },
+                            "target_month": {
+                                "type": "integer", 
+                                "description": "Filter by month (1-12). Optional."
+                            },
+                            "target_year": {
+                                "type": "integer", 
+                                "description": "Filter by year (e.g. 2026). Optional."
+                            }
+                        },
+                        "required": ["group_by"]
+                    }
+                }
             }
-
         ]
         system_prompt = f"""You are a helpful project management assistant. 
         Today's Date: {today_date}
@@ -160,6 +187,28 @@ def generate_ai_response(
         - If the user asks about specific people, match names case-insensitively.
         - If a user explicitly asks to CHANGE or UPDATE a task (e.g., "Mark X as Done", "Assign Y to John"), use the 'update_task_field' tool.
         - Be specific. If a task is overdue, mention that.
+        FORMATTING RULES:
+        1. TABLES: If the user wants a list or comparison, output a standard Markdown Table.
+           Example:
+           | Task | Status |
+           |------|--------|
+           | Bug  | Open   |
+        2. GRAPHS: If the user asks for a chart/graph, call 'get_task_statistics' first. 
+        Then, output the data in this EXACT JSON format inside a code block:
+           ```chart
+       {    
+         "type": "bar",
+         "data": {
+           "labels": ["Pending", "Done", "InProgress"],
+           "datasets": [{
+             "label": "Task Status",
+             "data": [5, 3, 2],
+             "backgroundColor": ["#FF6384", "#36A2EB", "#FFCE56"]
+           }]
+         }
+       }
+
+        
         """
         
         messages = [{"role": "system", "content": system_prompt}]
@@ -232,6 +281,14 @@ def generate_ai_response(
                             target_month=args.get("target_month"),
                             target_year=args.get("target_year"),
                             target_date=args.get("target_date")
+                    )
+                    # CASE 5: Filter for Stats
+                    elif function_name == "get_task_statistics":
+                        print("🔹 Calculating stats...", flush=True)
+                        function_response = get_task_statistics(
+                            group_by=args.get("group_by"),
+                            target_month=args.get("target_month"),
+                            target_year=args.get("target_year")
                     )
                     else:
                         print(f"❌ NAME MISMATCH: AI called '{function_name}' but Python expects 'add_task_from_ai'", flush=True)
