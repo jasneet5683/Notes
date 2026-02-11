@@ -78,6 +78,37 @@ def add_task_to_sheet(task: TaskInput) -> bool:
         print(f"❌ Error adding task: {e}")
         return False
 
+#----- New AI Wrapper function
+def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", end_date: str = "") -> str:
+    """
+    Wrapper for AI to add tasks. 
+    Converts string arguments into a TaskInput object and calls the main function.
+    """
+    try:
+        # 1. Set Defaults
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        
+        # 2. Create the TaskInput object (This matches your Pydantic model)
+        # Note: We default 'client' to 'General' and 'status' to 'Pending'
+        new_task_input = TaskInput(
+            task_name=task_name,
+            start_date=current_date,
+            end_date=end_date,
+            status="Pending",
+            assigned_to=assigned_to,
+            client="General", 
+            priority=priority
+        )
+        # 3. Call your EXISTING function
+        success = add_task_to_sheet(new_task_input)
+        if success:
+            return f"✅ Successfully added task '{task_name}'."
+        else:
+            return "❌ Failed to add task. Please check the logs."
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+
 def update_task_status(update: TaskUpdate) -> bool:
     """Update the status of an existing task"""
     try:
