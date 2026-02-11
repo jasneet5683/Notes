@@ -9,6 +9,7 @@ from services.google_sheets_service import (
     add_task_from_ai
 )
 from typing import List, Optional
+import sys
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -50,19 +51,14 @@ def generate_ai_response(
     user_message: str, 
     conversation_history: Optional[List[str]] = None
 ) -> str:
-    """Generate AI response using OpenAI API with Tool Calling capabilities"""
+    """Generate AI response using OpenAI API with DEBUGGING enabled"""
     try:
         # Fetch current tasks for context
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
-        
-        # Get Today's Date
         today_date = datetime.now().strftime("%Y-%m-%d")
-
-        
-       # --- TOOL DEFINITIONS ---
+        # --- TOOL DEFINITIONS ---
         tools = [
-            # --- TOOL 1: Update Task ---
             {
                 "type": "function",
                 "function": {
@@ -78,41 +74,30 @@ def generate_ai_response(
                         "required": ["task_name", "field_type", "new_value"]
                     }
                 }
-            },  # <--- FIXED: Added comma here
-        
-            # --- TOOL 2: Add Task ---
+            },
             {
                 "type": "function",
                 "function": {
-                    "name": "add_task_from_ai", # <--- Make sure this matches your Python function name
+                    "name": "add_task_from_ai", # <--- Ensure this name is used below
                     "description": "Add a brand new task to the project tracker.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "task_name": {"type": "string", "description": "The name of the new task."},
-                            "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned' if not specified."},
-                            "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level. Default 'Medium'."},
-                            "end_date": {"type": "string", "description": "Due date in YYYY-MM-DD format. Leave empty if not specified."}, # <--- FIXED: Added comma here
-                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name. Leave empty if not specified."}
+                            "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned'."},
+                            "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level."},
+                            "end_date": {"type": "string", "description": "Due date (YYYY-MM-DD)."},
+                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name."}
                         },
                         "required": ["task_name"]
                     }
                 }
             }
         ]
-
-        
-
-        
-        # Enhanced system prompt with DATE AWARENESS + TOOL INSTRUCTIONS
         system_prompt = f"""You are a helpful project management assistant. 
-        
-        CONTEXT:
         Today's Date: {today_date}
-        
         TASK LIST:
         {tasks_context}
-        
         INSTRUCTIONS:
         - Search through the task list carefully.
         - When users ask about dates (e.g., "due soon", "next 10 days"), compare the 'End Date' in the list with 'Today's Date'.
@@ -121,63 +106,53 @@ def generate_ai_response(
         - Be specific. If a task is overdue, mention that.
         """
         
-        # Build conversation messages
-        messages = [
-            {"role": "system", "content": system_prompt}
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
         
-        # Add conversation history
         if conversation_history:
             for msg in conversation_history[-5:]:
                 messages.append({"role": "user", "content": str(msg)})
         
-        # Add current user message
         messages.append({"role": "user", "content": str(user_message)})
         
-        # --- 1. FIRST API CALL (Check for tools) ---
+        # --- 1. FIRST API CALL ---
+        print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            tools=tools,           # <--- Added Tools
-            tool_choice="auto",    # <--- Let AI decide
-            temperature=0.3,
-            max_tokens=500
+            tools=tools,
+            tool_choice="auto",
+            temperature=0.3
         )
         
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
-
-        # --- 2. HANDLE TOOL CALLS (If AI wants to update something) ---
-        
+        # --- 2. HANDLE TOOL CALLS ---
         if tool_calls:
-            # 1. Add the AI's "Request" to the history
             messages.append(response_message)
-
+            
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
-                tool_id = tool_call.id # <--- CRITICAL: We need this ID
+                tool_id = tool_call.id
                 
-                # specific args
+                # Force print to Railway logs
+                print(f"🔹 AI CALLED FUNCTION: {function_name}", flush=True)
+                print(f"🔹 ARGS: {tool_call.function.arguments}", flush=True)
                 try:
                     args = json.loads(tool_call.function.arguments)
-                except:
+                except Exception as json_err:
+                    print(f"❌ JSON Parse Error: {json_err}", flush=True)
                     args = {}
-
-                function_response = "Error: Function executed but returned no result." # Default
-
-                print(f"🔹 AI is trying to call: {function_name}") # Debug print
-
+                function_response = "Error: Unknown function." # Default
+                # EXECUTE PYTHON CODE
                 try:
-                    # CASE 1: UPDATE TASK
                     if function_name == "update_task_field":
                         function_response = update_task_field(
                             task_name=args.get("task_name"),
                             field_type=args.get("field_type"),
                             new_value=args.get("new_value")
                         )
-
-                    # CASE 2: ADD TASK
-                    # Check BOTH names just to be safe in case JSON def is different
+                    
+                    # CHECK FOR BOTH NAMES TO PREVENT ERRORS
                     elif function_name == "add_task_from_ai" or function_name == "add_task_to_sheet":
                         function_response = add_task_from_ai(
                             task_name=args.get("task_name"),
@@ -186,36 +161,31 @@ def generate_ai_response(
                             end_date=args.get("end_date", ""),
                             client=args.get("client", "General")
                         )
-                    
-                    # CASE 3: UNKNOWN FUNCTION
                     else:
-                        function_response = f"Error: The function '{function_name}' does not exist in the backend."
-
-                except Exception as tool_error:
-                    function_response = f"Error executing tool: {str(tool_error)}"
-
-                # --- CRITICAL STEP: ALWAYS APPEND THE RESULT ---
+                        print(f"❌ NAME MISMATCH: AI called '{function_name}' but Python expects 'add_task_from_ai'", flush=True)
+                        function_response = f"Error: Function {function_name} not found."
+                except Exception as e:
+                    print(f"❌ EXECUTION ERROR: {e}", flush=True)
+                    function_response = f"Error executing tool: {str(e)}"
+                print(f"🔹 FUNCTION RESULT: {function_response}", flush=True)
+                # APPEND RESULT
                 messages.append({
-                    "tool_call_id": tool_id, # MUST MATCH THE ID FROM OPENAI
+                    "tool_call_id": tool_id,
                     "role": "tool",
                     "name": function_name,
-                    "content": str(function_response), # Content must be a string
+                    "content": str(function_response),
                 })
-
             # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages
             )
             return second_response.choices[0].message.content.strip()
-
-
-        # If no tool was called, return original response
         return response_message.content.strip()
         
     except Exception as e:
-        print(f"❌ Error generating AI response: {e}")
-        return "Sorry, I couldn't generate a response at this moment. Please try again."
+        print(f"❌ CRITICAL ERROR: {e}", flush=True)
+        return "Sorry, I encountered a system error."
 
 def get_tasks_by_assignee(assignee_name: str) -> str:
     """Get tasks for a specific assignee - useful for direct queries"""
