@@ -174,9 +174,9 @@ async function searchTasks() {
     }
 }
 
-// 🤖 7. CHAT WITH AI
+// 🤖 7. CHAT WITH AI (UPDATED FOR CHARTS/TABLES)
 function sendChat(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
@@ -190,10 +190,14 @@ function sendChat(event) {
     
     // Add loading indicator
     const loadingId = 'loading_' + Date.now();
-    messagesDiv.innerHTML += `<div id="${loadingId}" class="message bot">🤖 Thinking...</div>`;
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = loadingId;
+    loadingDiv.className = 'message bot';
+    loadingDiv.innerText = '🤖 Thinking...';
+    messagesDiv.appendChild(loadingDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
     
-    // 🔥 FIXED: Restructure payload to match API expectations
+    // Prepare payload
     const requestPayload = {
         prompt: message,
         conversation_history: conversationHistory.map(msg => ({
@@ -213,30 +217,79 @@ function sendChat(event) {
         return response.json();
     })
     .then(data => {
-        // Remove loading message
-        document.getElementById(loadingId).remove();
+        // 1. Remove loading message
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) loadingElement.remove();
         
-        // Add AI response
-        messagesDiv.innerHTML += `<div class="message bot">🤖 ${data.response}</div>`;
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        // 2. Add AI response using smart renderer (Handles Charts/Tables)
+        renderAIMessage(data.response, messagesDiv);
         
-        // Update conversation history with proper string content
+        // 3. Update conversation history
         conversationHistory.push(
             { role: 'user', content: message },
             { role: 'assistant', content: data.response }
         );
         
-        // Keep only last 10 messages to prevent payload getting too large
+        // Trim history
         if (conversationHistory.length > 10) {
             conversationHistory = conversationHistory.slice(-10);
         }
     })
     .catch(error => {
         console.error('Chat error:', error);
-        document.getElementById(loadingId).remove();
-        messagesDiv.innerHTML += `<div class="message bot">🤖 ❌ Sorry, I'm currently unavailable. Please try again later.</div>`;
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) loadingElement.remove();
+        messagesDiv.innerHTML += `<div class="message bot">🤖 ❌ Sorry, I'm currently unavailable.</div>`;
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
+}
+
+/**
+ * 🎨 HELPER: Renders AI Text, Tables (Markdown), and Charts (JSON)
+ */
+function renderAIMessage(content, container) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message bot';
+
+    // Regex to find: ```chart ... ```
+    const chartRegex = /```chart\s*([\s\S]*?)\s*```/;
+    const match = content.match(chartRegex);
+
+    if (match) {
+        // --- CASE A: CHART DETECTED ---
+        
+        // 1. Render text before the chart (if any)
+        const textBefore = content.split("```chart")[0];
+        // marked.parse renders Markdown to HTML (including Tables)
+        msgDiv.innerHTML = marked.parse(textBefore);
+
+        // 2. Create Chart Container
+        const canvasId = "chart-" + Date.now();
+        const chartContainer = document.createElement("div");
+        chartContainer.className = "chart-wrapper"; // Ensure CSS exists for this
+        chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+        msgDiv.appendChild(chartContainer);
+        
+        container.appendChild(msgDiv); // Append to DOM first so Canvas exists
+
+        // 3. Draw Chart
+        try {
+            const chartData = JSON.parse(match[1]);
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, chartData);
+        } catch (e) {
+            console.error("Chart Render Error:", e);
+            msgDiv.insertAdjacentHTML('beforeend', "<p style='color:red; font-size:small'>❌ Error loading chart.</p>");
+        }
+    } else {
+        // --- CASE B: STANDARD TEXT / TABLE ---
+        // Just use marked.parse to handle bold, lists, and tables automatically
+        msgDiv.innerHTML = marked.parse(content);
+        container.appendChild(msgDiv);
+    }
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
 }
 
 // 🛠️ UTILITY FUNCTIONS
