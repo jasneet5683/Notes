@@ -197,3 +197,48 @@ def update_task_field(task_name: str, field_type: str, new_value: str) -> str:
     except Exception as e:
         print(f"Error updating sheet: {e}")
         return f"Technical error while updating: {str(e)}"
+
+# Filter tasks by Date
+
+def filter_tasks_by_date(target_month: int = None, target_year: int = None, target_date: str = None) -> str:
+    """
+    Filters tasks based on a specific date, or a month/year combination.
+    """
+    tasks = fetch_all_tasks()
+    if not tasks:
+        return "No tasks found in database."
+
+    filtered_results = []
+    
+    for task in tasks:
+        # Assuming date format in Sheet is YYYY-MM-DD
+        end_date_str = str(task.get("End Date", "")).strip()
+        
+        try:
+            # Parse the date from the sheet
+            task_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            
+            match = True
+            
+            # Filter by exact date
+            if target_date:
+                if end_date_str != target_date:
+                    match = False
+            
+            # Filter by Month and Year
+            if target_month and target_year:
+                if task_date.month != target_month or task_date.year != target_year:
+                    match = False
+
+            if match:
+                filtered_results.append(f"- {task.get('Task Name')} (Due: {end_date_str}, Status: {task.get('Status')})")
+
+        except ValueError:
+            # Skip rows where date is missing or invalid format
+            continue
+
+    if not filtered_results:
+        return "No tasks found matching that date criteria."
+
+    return "Here are the matching tasks:\n" + "\n".join(filtered_results)
+
