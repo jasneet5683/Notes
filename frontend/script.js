@@ -574,6 +574,8 @@ function renderStatusChart() {
         if (status.includes("pending")) pending++;
         else if (status.includes("progress")) inProgress++;
         else if (status.includes("completed")) completed++;
+        else if (status.includes("hold")) onHold++;
+        else if (status.includes("cancelled")) cancelled++;
     });
 
     // 3. Get Canvas Context
@@ -595,7 +597,9 @@ function renderStatusChart() {
                 backgroundColor: [
                     '#ffc107', // Yellow for Pending
                     '#17a2b8', // Blue for In Progress
-                    '#28a745'  // Green for Completed
+                    '#28a745',  // Green for Completed
+                    '#708090',  // Grey for On Hold
+                    '#DC143C'   // Crimson for Cancelled
                 ],
                 borderWidth: 1
             }]
