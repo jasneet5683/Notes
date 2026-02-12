@@ -244,54 +244,6 @@ function sendChat(event) {
     });
 }
 
-/**
- * 🎨 HELPER: Renders AI Text, Tables (Markdown), and Charts (JSON)
- */
-function renderAIMessage(content, container) {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = 'message bot';
-
-    // Regex to find: ```chart ... ```
-    const chartRegex = /```chart\s*([\s\S]*?)\s*```/;
-    const match = content.match(chartRegex);
-
-    if (match) {
-        // --- CASE A: CHART DETECTED ---
-        
-        // 1. Render text before the chart (if any)
-        const textBefore = content.split("```chart")[0];
-        // marked.parse renders Markdown to HTML (including Tables)
-        msgDiv.innerHTML = marked.parse(textBefore);
-
-        // 2. Create Chart Container
-        const canvasId = "chart-" + Date.now();
-        const chartContainer = document.createElement("div");
-        chartContainer.className = "chart-wrapper"; // Ensure CSS exists for this
-        chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
-        msgDiv.appendChild(chartContainer);
-        
-        container.appendChild(msgDiv); // Append to DOM first so Canvas exists
-
-        // 3. Draw Chart
-        try {
-            const chartData = JSON.parse(match[1]);
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            new Chart(ctx, chartData);
-        } catch (e) {
-            console.error("Chart Render Error:", e);
-            msgDiv.insertAdjacentHTML('beforeend', "<p style='color:red; font-size:small'>❌ Error loading chart.</p>");
-        }
-    } else {
-        // --- CASE B: STANDARD TEXT / TABLE ---
-        // Just use marked.parse to handle bold, lists, and tables automatically
-        msgDiv.innerHTML = marked.parse(content);
-        container.appendChild(msgDiv);
-    }
-
-    // Scroll to bottom
-    container.scrollTop = container.scrollHeight;
-}
-
 // 🛠️ UTILITY FUNCTIONS
 function createTaskCard(task) {
     const priorityEmoji = getPriorityEmoji(task.Priority);
@@ -328,6 +280,125 @@ function createTaskCard(task) {
         </div>
     `;
 }
+
+
+/**
+ * 🎨 HELPER: Renders AI Text, Tables, and Charts with DYNAMIC COLORS
+ */
+function renderAIMessage(content, container) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message bot';
+
+    // Regex to find: ```chart ... ```
+    const chartRegex = /```chart\s*([\s\S]*?)\s*```/;
+    const match = content.match(chartRegex);
+
+    if (match) {
+        // --- CASE A: CHART DETECTED ---
+        
+        // 1. Render text before the chart
+        const textBefore = content.split("```chart")[0];
+        msgDiv.innerHTML = marked.parse(textBefore);
+
+        // 2. Create Chart Container
+        const canvasId = "chart-" + Date.now();
+        const chartContainer = document.createElement("div");
+        chartContainer.className = "chart-wrapper"; 
+        chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+        msgDiv.appendChild(chartContainer);
+        
+        container.appendChild(msgDiv);
+
+        // 3. Process & Draw Chart
+        try {
+            let chartData = JSON.parse(match[1]);
+
+            // 🔥 MAGIC: Apply Dynamic Colors before drawing
+            chartData = smartColorize(chartData);
+
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, chartData);
+
+        } catch (e) {
+            console.error("Chart Render Error:", e);
+            msgDiv.insertAdjacentHTML('beforeend', "<p style='color:red; font-size:small'>❌ Error loading chart.</p>");
+        }
+    } else {
+        // --- CASE B: STANDARD TEXT ---
+        msgDiv.innerHTML = marked.parse(content);
+        container.appendChild(msgDiv);
+    }
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
+/**
+ * 🌈 SMART COLOR GENERATOR
+ * Assigns specific colors to known statuses/priorities
+ * and generates a nice palette for everything else.
+ */
+function smartColorize(chartJson) {
+    // 1. Define Standard Brand Colors
+    const colorMap = {
+        // Statuses
+        'completed': '#2ecc71',   // Green
+        'done': '#2ecc71',
+        'in progress': '#3498db', // Blue
+        'pending': '#f1c40f',     // Yellow/Orange
+        'on hold': '#95a5a6',     // Grey
+        'cancelled': '#e74c3c',   // Red
+        
+        // Priorities
+        'critical': '#c0392b',    // Dark Red
+        'blocker': '#800000',     // Maroon
+        'high': '#e67e22',        // Orange
+        'medium': '#f1c40f',      // Yellow
+        'low': '#27ae60',         // Green
+        'info': '#3498db',        // Blue
+
+        // Clients (Examples)
+        'etisalat': '#71bc68',
+        'du': '#00a9ce',
+        'batelco': '#d6001c'
+    };
+
+    // 2. Fallback Palette (Pastel/Vibrant mix)
+    const fallbackPalette = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', 
+        '#C9CBCF', '#FFCD56', '#4D5360', '#F7464A', '#46BFBD'
+    ];
+
+    // 3. Apply colors to datasets
+    if (chartJson.data && chartJson.data.datasets) {
+        chartJson.data.datasets.forEach(dataset => {
+            // We need to generate a color array matching the labels
+            const backgroundColors = chartJson.data.labels.map((label, index) => {
+                const key = label.toLowerCase().trim();
+                // Check if we have a specific color for this label
+                if (colorMap[key]) {
+                    return colorMap[key];
+                }
+                // Otherwise, pick from the fallback palette (looping if needed)
+                return fallbackPalette[index % fallbackPalette.length];
+            });
+
+            dataset.backgroundColor = backgroundColors;
+            // Add a slight border for better visibility
+            dataset.borderColor = '#ffffff'; 
+            dataset.borderWidth = 1;
+        });
+    }
+
+    // 4. Make charts responsive & maintain aspect ratio
+    if (!chartJson.options) chartJson.options = {};
+    chartJson.options.responsive = true;
+    chartJson.options.maintainAspectRatio = false;
+
+    return chartJson;
+}
+
+
 
 function getPriorityEmoji(priority) {
     switch(priority) {
