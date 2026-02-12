@@ -564,59 +564,67 @@ function renderStatusChart() {
     }
 
     // 2. Count the statuses
+    // --- FIX: We must declare ALL variables here first ---
     let pending = 0;
     let inProgress = 0;
     let completed = 0;
-    let onHold = 0;
-    let cancelled = 0;
+    let onHold = 0;      
+    let cancelled = 0;   
 
     allTasksData.forEach(task => {
-        // Normalize string to handle lowercase/uppercase differences
         let status = (task.status || "").toLowerCase(); 
+        
         if (status.includes("pending")) pending++;
         else if (status.includes("progress")) inProgress++;
         else if (status.includes("completed")) completed++;
-        else if (status.includes("hold")) onHold++;
-        else if (status.includes("cancelled")) cancelled++;
+        else if (status.includes("hold")) onHold++;       
+        else if (status.includes("cancelled")) cancelled++; 
     });
 
     // 3. Get Canvas Context
     const ctx = document.getElementById('statusChart').getContext('2d');
 
-    // 4. Destroy previous chart if it exists (prevents glitching)
+    // 4. Destroy previous chart if it exists
     if (myChart) {
         myChart.destroy();
     }
 
     // 5. Create New Chart
     myChart = new Chart(ctx, {
-        type: 'doughnut', // You can change this to 'pie' or 'bar'
+        type: 'doughnut', 
         data: {
-            labels: ['Pending', 'In Progress', 'Completed', "On Hold", "Cancelled"],
+            // --- FIX: Add the new labels here ---
+            labels: ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled'], 
             datasets: [{
                 label: '# of Tasks',
-                data: [pending, inProgress, completed, onHold, cancelled]
+                // --- FIX: Add the new counts here ---
+                data: [pending, inProgress, completed, onHold, cancelled], 
                 backgroundColor: [
-                    '#ffc107', // Yellow for Pending
-                    '#17a2b8', // Blue for In Progress
-                    '#28a745',  // Green for Completed
-                    '#708090',  // Grey for On Hold
-                    '#DC143C'   // Crimson for Cancelled
+                    '#ffc107', // Yellow (Pending)
+                    '#17a2b8', // Blue (In Progress)
+                    '#28a745', // Green (Completed)
+                    '#6c757d', // Grey (On Hold)
+                    '#dc3545'  // Red (Cancelled)
                 ],
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false, // Fits the container height
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom',
+                    position: 'bottom', // Moves labels to the bottom
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15
+                    }
                 }
             }
         }
     });
 }
+
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
