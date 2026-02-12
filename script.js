@@ -567,6 +567,8 @@ function renderStatusChart() {
     let pending = 0;
     let inProgress = 0;
     let completed = 0;
+    let onHold = 0;
+    let cancelled = 0;
 
     allTasksData.forEach(task => {
         // Normalize string to handle lowercase/uppercase differences
