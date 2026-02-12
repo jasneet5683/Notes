@@ -390,11 +390,32 @@ function smartColorize(chartJson) {
         });
     }
 
-    // 4. Make charts responsive & maintain aspect ratio
+    // 4. MODERN STYLING 🎨
     if (!chartJson.options) chartJson.options = {};
+    
+    // Make it responsive
     chartJson.options.responsive = true;
     chartJson.options.maintainAspectRatio = false;
-
+    // A. If it's a BAR chart, make corners round and clean up grid
+    if (chartJson.type === 'bar') {
+        chartJson.data.datasets.forEach(dataset => {
+            dataset.borderRadius = 8; // Rounded top corners
+            dataset.barThickness = 30; // Not too fat, not too thin
+        });
+        
+        chartJson.options.scales = {
+            y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, // Faint grid
+            x: { grid: { display: false } } // Remove vertical grid lines
+        };
+    }
+    // B. If it's a PIE chart, turn it into a DOUGHNUT for a modern look
+    if (chartJson.type === 'pie' || chartJson.type === 'doughnut') {
+        chartJson.type = 'doughnut'; // Force doughnut style
+        chartJson.options.cutout = '70%'; // Thinner ring
+        chartJson.options.plugins = {
+            legend: { position: 'right' } // Legend on the side looks better
+        };
+    }
     return chartJson;
 }
 
