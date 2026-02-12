@@ -30,15 +30,15 @@ async function getSummary() {
     try {
         const summaryDisplay = document.getElementById('summaryDisplay');
         
-        // 1. Check if we have data locally
+        // 1. Check local data
         if (!allTasksData || allTasksData.length === 0) {
-            summaryDisplay.innerHTML = '<div class="error">⚠️ No tasks found locally. Please hit "Refresh Data".</div>';
+            summaryDisplay.innerHTML = '<div class="error">⚠️ No tasks found. Please Refresh Data.</div>';
             return;
         }
 
-        summaryDisplay.innerHTML = '<div class="loading">🧮 Calculating stats & generating report...</div>';
+        summaryDisplay.innerHTML = '<div class="loading">📊 Analyzing priorities, deadlines & workload...</div>';
 
-        // 2. Calculate the 'Hard Facts' in JavaScript (100% Accurate)
+        // 2. Calculate Hard Facts (To prevent counting errors)
         const total = allTasksData.length;
         const pending = allTasksData.filter(t => (t.status||'').toLowerCase().includes('pending')).length;
         const progress = allTasksData.filter(t => (t.status||'').toLowerCase().includes('progress')).length;
@@ -46,24 +46,44 @@ async function getSummary() {
         const hold = allTasksData.filter(t => (t.status||'').toLowerCase().includes('hold')).length;
         const cancelled = allTasksData.filter(t => (t.status||'').toLowerCase().includes('cancelled')).length;
 
-        // 3. Construct a specific prompt with these numbers
+        // 3. Prepare FULL Data for AI
+        // We map the raw data to a cleaner object to save tokens but keep all info
+        const detailedTasks = allTasksData.map(t => ({
+            task: t.Task_Name,
+            status: t.status,
+            assignee: t.assigned_to || "Unassigned",
+            priority: t.Priority || "N/A",
+            start: t.start_date || "N/A",
+            due: t.end_date || "N/A",
+            client: t.Client || "General"
+        }));
+
+        // 4. Construct the Prompt
         const prompt = `
-            I have exactly ${total} tasks in my project.
-            Breakdown:
-            - Pending: ${pending}
+            I need a professional Project Status Report.
+            
+            HARD DATA SUMMARY (Use these numbers as absolute truth):
+            - Total Tasks: ${total}
+            - Pending: ${pending} 
             - In Progress: ${progress}
             - Completed: ${completed}
             - On Hold: ${hold}
             - Cancelled: ${cancelled}
-            
-            Here is the task list:
-            ${JSON.stringify(allTasksData.map(t => t.Task_Name + ' (' + t.status + ')'))}
+            - Today's Date: ${new Date().toLocaleDateString()}
 
-            Please provide a short, professional project summary based on these exact numbers.
+            DETAILED TASK LIST (JSON):
+            ${JSON.stringify(detailedTasks)}
+
+            INSTRUCTIONS:
+            Based on the data above, write a concise summary (max 150 words) covering:
+            1. 🚩 **Blockers & Risks**: Are there high-priority tasks pending? Any overdue dates?
+            2. 👥 **Workload**: Who is assigned the most work?
+            3. 📈 **Progress**: General health of the project.
+            
+            Use bullet points and bold text for key insights.
         `;
 
-        // 4. Send to the /ask endpoint (Uses the AI to write text, but uses our numbers)
-        // Note: We use '/ask' instead of '/summary' so we can send our custom data.
+        // 5. Send to Backend
         const response = await fetch(`${API_BASE_URL}/ask`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -73,29 +93,34 @@ async function getSummary() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        
-        // 5. Display the result
-        // We handle both 'answer' (common in /ask) or 'summary' (common in /summary)
-        const aiText = data.answer || data.summary || data.response;
+        const aiText = data.answer || data.response;
 
+        // 6. Render Output
+        // Use 'marked.parse(aiText)' if you have the marked.js library, otherwise just use aiText
+        // We wrap it in a nice container with the hard stats visible at top
         summaryDisplay.innerHTML = 
             `<div class="summary-box">
-                <h3>🧠 AI Project Summary</h3>
-                <!-- We display our accurate stats at the top -->
-                <div style="display:flex; gap:10px; margin-bottom:10px; font-weight:bold; color:#555;">
-                    <span>Total: ${total}</span> | 
-                    <span style="color:#e67e22">Pending: ${pending}</span> | 
-                    <span style="color:#27ae60">Done: ${completed}</span>
+                <h3>🧠 Smart Project Analysis</h3>
+                <div class="stats-bar" style="display:flex; gap:15px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee; font-size:0.9rem;">
+                    <span><b>Total:</b> ${total}</span>
+                    <span style="color:#e67e22"><b>Pending:</b> ${pending}</span>
+                    <span style="color:#17a2b8"><b>In Progress:</b> ${progress}</span>
+                    <span style="color:#28a745"><b>Done:</b> ${completed}</span>
+                    <span style="color:#818589"><b>On Hold:</b> ${hold}</span>
+                    <span style="color:#dc143c"><b>Cancelled:</b> ${cancelled}</span>
                 </div>
-                <hr>
-                <p>${aiText}</p>
-                <small>Generated: ${new Date().toLocaleString()}</small>
+                <div class="ai-content" style="line-height: 1.6;">
+                    ${typeof marked !== 'undefined' ? marked.parse(aiText) : aiText.replace(/\n/g, '<br>')}
+                </div>
+                <div style="margin-top:10px; text-align:right; font-size:0.8rem; color:#888;">
+                    Generated: ${new Date().toLocaleTimeString()}
+                </div>
             </div>`;
 
     } catch (error) {
         console.error('Summary error:', error);
         document.getElementById('summaryDisplay').innerHTML = 
-            `<div class="error">❌ Failed to generate summary. <br>Error: ${error.message}</div>`;
+            `<div class="error">❌ Analysis Failed: ${error.message}</div>`;
     }
 }
 
