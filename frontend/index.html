@@ -152,9 +152,10 @@
         <!-- DASHBOARD & HEALTH -->
         <div class="section">
             <h2>📊 Dashboard & System Status</h2>
-            <div class="grid-3">
+            <div class="grid-4">
                 <button onclick="checkHealth()">🔍 Check API Health</button>
                 <button onclick="getSummary()">📈 Get AI Summary</button>
+                <button onclick="downloadSummary()" class="btn-secondary" style="margin-top:10px;">📥 Save Report as Text</button>
                 <button onclick="loadAllTasks()">🔄 Refresh All Tasks</button>
             </div>
             <div id="summaryDisplay"></div>
@@ -233,6 +234,7 @@
             <div class="grid">
                 <button onclick="loadAllTasks()">🔄 Refresh Tasks</button>
                 <button onclick="clearTasksList()" class="btn-secondary">🗑️ Clear Display</button>
+                <button onclick="downloadTasksCSV()" class="btn-secondary" style="margin-left: 10px;">📊 Export Tasks to CSV</button>
             </div>
             <div id="taskList" class="loading">Loading tasks...</div>
         </div>
