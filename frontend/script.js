@@ -2,6 +2,7 @@ import { API_BASE_URL } from './config.js';
 
 // Global state
 let conversationHistory = [];
+let allTasksData = []; // <--- 🆕 Add this to store tasks for export
 
 // 🔍 1. HEALTH CHECK ENDPOINT
 async function checkHealth() {
@@ -55,6 +56,7 @@ async function loadAllTasks() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
+        allTasksData = data.tasks || []; 
         console.log('Loaded tasks:', data);
         
         if (data.tasks && data.tasks.length > 0) {
@@ -491,6 +493,63 @@ document.addEventListener('DOMContentLoaded', () => {
     getSummary();
 });
 
+// 📥 EXPORT TASKS TO CSV
+function downloadTasksCSV() {
+    if (!allTasksData || allTasksData.length === 0) {
+        showNotification("⚠️ No tasks available to export.", "error");
+        return;
+    }
+
+    // 1. Define Headers
+    const headers = ["Task Name", "Assigned To", "Client", "Priority", "Status", "Start Date", "End Date"];
+    
+    // 2. Map Data to Rows
+    const rows = allTasksData.map(task => [
+        `"${task.Task_Name || ''}"`,       // Wrap in quotes to handle commas in text
+        `"${task.assigned_to || ''}"`,
+        `"${task.Client || ''}"`,
+        task.Priority || 1,
+        `"${task.status || ''}"`,
+        task.start_date || '',
+        task.end_date || ''
+    ]);
+
+    // 3. Combine Headers and Rows
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+
+    // 4. Create Download Link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `project_tasks_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// 📥 DOWNLOAD SUMMARY AS TEXT
+function downloadSummary() {
+    const summaryBox = document.querySelector('.summary-box p'); // Select the paragraph inside the summary box
+    
+    if (!summaryBox) {
+        showNotification("⚠️ No summary generated yet.", "error");
+        return;
+    }
+
+    const textContent = `🧠 AI PROJECT SUMMARY\nDate: ${new Date().toLocaleString()}\n\n${summaryBox.innerText}`;
+    
+    // Create Download Link
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `project_summary_${new Date().toISOString().split('T')[0]}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
 window.getSummary = getSummary;
@@ -499,3 +558,5 @@ window.searchTasks = searchTasks;
 window.sendChat = sendChat;
 window.updateTaskStatus = updateTaskStatus;
 window.clearTasksList = clearTasksList;
+window.downloadTasksCSV = downloadTasksCSV;
+window.downloadSummary = downloadSummary;
