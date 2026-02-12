@@ -592,10 +592,10 @@ function renderStatusChart() {
     myChart = new Chart(ctx, {
         type: 'doughnut', // You can change this to 'pie' or 'bar'
         data: {
-            labels: ['Pending', 'In Progress', 'Completed'],
+            labels: ['Pending', 'In Progress', 'Completed', "On Hold", "Cancelled"],
             datasets: [{
                 label: '# of Tasks',
-                data: [pending, inProgress, completed],
+                data: [pending, inProgress, completed, onHold, cancelled]
                 backgroundColor: [
                     '#ffc107', // Yellow for Pending
                     '#17a2b8', // Blue for In Progress
