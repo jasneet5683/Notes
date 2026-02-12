@@ -361,3 +361,22 @@ def summarize_tasks() -> str:
     except Exception as e:
         print(f"❌ Error summarizing tasks: {e}")
         return "Unable to generate summary."
+
+def simple_ai_chat(user_prompt: str) -> str:
+    """
+    A simple direct chat function. 
+    It trusts the prompt provided by the frontend (which includes the accurate counts).
+    """
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful project assistant. user will provide data stats, you simply analyze them."},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.5
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"❌ Error in simple_ai_chat: {e}")
+        return "I'm sorry, I couldn't process the summary request."
