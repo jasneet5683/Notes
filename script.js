@@ -550,6 +550,68 @@ function downloadSummary() {
     document.body.removeChild(link);
 }
 
+// ==========================================
+// 📊 CHART VISUALIZATION
+// ==========================================
+
+let myChart = null; // Variable to store chart instance
+
+function renderStatusChart() {
+    // 1. Check if we have data
+    if (typeof allTasksData === 'undefined' || !allTasksData || allTasksData.length === 0) {
+        alert("⚠️ No data found! Please click 'Refresh Data' first.");
+        return;
+    }
+
+    // 2. Count the statuses
+    let pending = 0;
+    let inProgress = 0;
+    let completed = 0;
+
+    allTasksData.forEach(task => {
+        // Normalize string to handle lowercase/uppercase differences
+        let status = (task.status || "").toLowerCase(); 
+        if (status.includes("pending")) pending++;
+        else if (status.includes("progress")) inProgress++;
+        else if (status.includes("completed")) completed++;
+    });
+
+    // 3. Get Canvas Context
+    const ctx = document.getElementById('statusChart').getContext('2d');
+
+    // 4. Destroy previous chart if it exists (prevents glitching)
+    if (myChart) {
+        myChart.destroy();
+    }
+
+    // 5. Create New Chart
+    myChart = new Chart(ctx, {
+        type: 'doughnut', // You can change this to 'pie' or 'bar'
+        data: {
+            labels: ['Pending', 'In Progress', 'Completed'],
+            datasets: [{
+                label: '# of Tasks',
+                data: [pending, inProgress, completed],
+                backgroundColor: [
+                    '#ffc107', // Yellow for Pending
+                    '#17a2b8', // Blue for In Progress
+                    '#28a745'  // Green for Completed
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Fits the container height
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+}
+
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
 window.getSummary = getSummary;
@@ -560,3 +622,4 @@ window.updateTaskStatus = updateTaskStatus;
 window.clearTasksList = clearTasksList;
 window.downloadTasksCSV = downloadTasksCSV;
 window.downloadSummary = downloadSummary;
+window.renderStatusChart = renderStatusChart;
