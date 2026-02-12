@@ -198,7 +198,6 @@ def generate_ai_response(
                "datasets": [{{
                  "label": "Task Status",
                  "data": [5, 3, 2],
-                 "backgroundColor": ["#FF6384", "#36A2EB", "#FFCE56"]
                }}]
              }}
            }}
