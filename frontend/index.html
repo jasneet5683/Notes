@@ -31,7 +31,58 @@
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         
-        input, select, textarea, button { 
+        /* --- NEW BUTTON STYLING FOR ALIGNMENT & COLORS --- */
+        .button-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap; /* Ensures responsiveness on small screens */
+            margin-bottom: 15px;
+        }
+        
+        /* Base button style update */
+        button { 
+            flex: 1; /* Makes buttons share equal width in the row */
+            padding: 10px 12px; 
+            margin: 0; /* Removing default margin to let flex gap handle spacing */
+            border: none; border-radius: 6px; 
+            font-size: 0.9rem; font-weight: 600; 
+            text-transform: uppercase; cursor: pointer;
+            transition: all 0.2s ease; letter-spacing: 0.5px;
+            white-space: nowrap;
+            color: white;
+            background: #667eea; /* Default fallback */
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        button:active { transform: translateY(0); }
+
+        /* Specific Action Colors */
+        .btn-health { background: #28a745; } /* Green */
+        .btn-health:hover { background: #218838; }
+        
+        .btn-summary { background: #007bff; } /* Blue */
+        .btn-summary:hover { background: #0069d9; }
+        
+        .btn-download { background: #17a2b8; } /* Cyan */
+        .btn-download:hover { background: #138496; }
+        
+        .btn-refresh { background: #6c757d; } /* Grey */
+        .btn-refresh:hover { background: #5a6268; }
+        
+        .btn-clear { background: #dc3545; } /* Red */
+        .btn-clear:hover { background: #c82333; }
+        
+        .btn-csv { background: #ffc107; color: #212529; } /* Yellow */
+        .btn-csv:hover { background: #e0a800; }
+        
+        .btn-submit { background: #667eea; } /* Purple (Default) */
+        .btn-submit:hover { background: #5a67d8; }
+
+        /* Inputs remaining style */
+        input, select, textarea { 
             width: 100%; padding: 12px; margin: 8px 0; 
             border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
             transition: all 0.2s ease;
@@ -40,25 +91,7 @@
             border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             outline: none;
         }
-        
-        button { 
-            background: #667eea; color: white; border: none; 
-            cursor: pointer; font-weight: 600; text-transform: uppercase;
-            transition: all 0.2s ease; letter-spacing: 0.5px;
-        }
-        button:hover { 
-            background: #5a67d8; transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        button:active { transform: translateY(0); }
-        
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #545b62; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #218838; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #c82333; }
-        
+
         .task-card { 
             border: 1px solid #e9ecef; padding: 20px; margin: 12px 0; 
             border-radius: 8px; background: #f8f9fa;
@@ -78,7 +111,7 @@
         .status.completed { background: #d4edda; color: #155724; border: 1px solid #00b894; }
         
         .chat-container {
-            height: 500px; display: flex; flex-direction: column; /* Increased height for charts */
+            height: 500px; display: flex; flex-direction: column;
         }
         .chat-messages { 
             flex: 1; overflow-y: auto; border: 1px solid #ddd; 
@@ -95,7 +128,7 @@
             color: #333;
         }
         
-        /* --- 2. NEW CSS FOR TABLES --- */
+        /* TABLE & CHART STYLES */
         .message table {
             width: 100%; border-collapse: collapse; margin: 15px 0;
             background: white; border-radius: 5px; overflow: hidden;
@@ -107,7 +140,6 @@
         .message th { background: #667eea; color: white; }
         .message tr:nth-child(even) { background: #f8f9fa; }
 
-        /* --- 3. NEW CSS FOR GRAPHS --- */
         .chart-wrapper {
             background: white; border: 1px solid #eee; border-radius: 8px;
             padding: 10px; margin-top: 10px; height: 300px; width: 100%;
@@ -134,6 +166,7 @@
         @media (max-width: 768px) { 
             .grid, .grid-3 { grid-template-columns: 1fr; }
             .header h1 { font-size: 2em; }
+            .button-row { flex-direction: column; }
         }
         
         .loading { text-align: center; color: #666; padding: 20px; }
@@ -152,11 +185,12 @@
         <!-- DASHBOARD & HEALTH -->
         <div class="section">
             <h2>📊 Dashboard & System Status</h2>
-            <div class="grid-4">
-                <button onclick="checkHealth()">🔍 Check API Health</button>
-                <button onclick="getSummary()">📈 Get AI Summary</button>
-                <button onclick="downloadSummary()" class="btn-secondary" style="margin-top:10px;">📥 Save Report as Text</button>
-                <button onclick="loadAllTasks()">🔄 Refresh All Tasks</button>
+            <!-- Updated to button-row for single line alignment -->
+            <div class="button-row">
+                <button onclick="checkHealth()" class="btn-health">🔍 Check API Health</button>
+                <button onclick="getSummary()" class="btn-summary">✨ AI Summary</button>
+                <button onclick="downloadSummary()" class="btn-download">📥 Save Report as Text</button>
+                <button onclick="loadAllTasks()" class="btn-refresh">🔄 Refresh All Tasks</button>
             </div>
             <div id="summaryDisplay"></div>
         </div>
@@ -171,7 +205,7 @@
                 <form id="chatForm" onsubmit="sendChat(event)">
                     <div class="grid">
                         <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
-                        <button type="submit">📤 Send Message</button>
+                        <button type="submit" class="btn-submit">📤 Send Message</button>
                     </div>
                 </form>
             </div>
@@ -213,7 +247,7 @@
                     <option value="Low">Low Priority</option>
                     <option value="Info">Info</option>
                 </select>
-                <button type="submit">🚀 Create Task</button>
+                <button type="submit" class="btn-submit">🚀 Create Task</button>
             </form>
         </div>
 
@@ -223,7 +257,7 @@
             <div class="grid">
                 <input id="searchInput" placeholder="Search by task name or assigned person..." 
                        onkeypress="if(event.key==='Enter') searchTasks()">
-                <button onclick="searchTasks()">🔍 Search Tasks</button>
+                <button onclick="searchTasks()" class="btn-submit">🔍 Search Tasks</button>
             </div>
             <div id="searchResults" class="search-results"></div>
         </div>
@@ -231,10 +265,11 @@
         <!-- ALL TASKS -->
         <div class="section">
             <h2>📋 All Tasks</h2>
-            <div class="grid">
-                <button onclick="loadAllTasks()">🔄 Refresh Tasks</button>
-                <button onclick="clearTasksList()" class="btn-secondary">🗑️ Clear Display</button>
-                <button onclick="downloadTasksCSV()" class="btn-secondary" style="margin-left: 10px;">📊 Export Tasks to CSV</button>
+            <!-- Updated to button-row for single line alignment -->
+            <div class="button-row">
+                <button onclick="loadAllTasks()" class="btn-refresh">🔄 Refresh Tasks</button>
+                <button onclick="clearTasksList()" class="btn-clear">🗑️ Clear Display</button>
+                <button onclick="downloadTasksCSV()" class="btn-csv">📊 Export Tasks to CSV</button>
             </div>
             <div id="taskList" class="loading">Loading tasks...</div>
         </div>
