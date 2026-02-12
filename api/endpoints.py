@@ -13,7 +13,9 @@ from services.google_sheets_service import (
     update_task_status, search_tasks
 )
 from services.openai_service import (
-    generate_ai_response, summarize_tasks
+    generate_ai_response, 
+    summarize_tasks,
+    simple_ai_chat
 )
 
 # ✅ DATA MODELS
@@ -30,6 +32,10 @@ class ChatResponse(BaseModel):
     response: str
     timestamp: datetime
     status: str = "success" 
+
+class SimpleAskRequest(BaseModel):
+    question: str
+
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -131,6 +137,24 @@ def get_project_summary():
         "timestamp": datetime.now().isoformat(),
         "status": "success"
     }
+
+# ✅ SIMPLE ASK ENDPOINT (For Summaries with Hard Facts)
+
+@router.post("/ask", response_model=dict)
+def ask_simple_question(request: SimpleAskRequest):
+    """
+    Receives a prompt (with calculated stats) and returns a text answer.
+    """
+    try:
+        answer = simple_ai_chat(request.question)
+        return {
+            "answer": answer,
+            "timestamp": datetime.now().isoformat(),
+            "status": "success"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ✅ HEALTH CHECK
 
