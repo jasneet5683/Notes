@@ -28,22 +28,74 @@ async function checkHealth() {
 // 📊 2. GET PROJECT SUMMARY
 async function getSummary() {
     try {
-        document.getElementById('summaryDisplay').innerHTML = '<div class="loading">🔄 Generating AI summary...</div>';
+        const summaryDisplay = document.getElementById('summaryDisplay');
         
-        const response = await fetch(`${API_BASE_URL}/summary`);
+        // 1. Check if we have data locally
+        if (!allTasksData || allTasksData.length === 0) {
+            summaryDisplay.innerHTML = '<div class="error">⚠️ No tasks found locally. Please hit "Refresh Data".</div>';
+            return;
+        }
+
+        summaryDisplay.innerHTML = '<div class="loading">🧮 Calculating stats & generating report...</div>';
+
+        // 2. Calculate the 'Hard Facts' in JavaScript (100% Accurate)
+        const total = allTasksData.length;
+        const pending = allTasksData.filter(t => (t.status||'').toLowerCase().includes('pending')).length;
+        const progress = allTasksData.filter(t => (t.status||'').toLowerCase().includes('progress')).length;
+        const completed = allTasksData.filter(t => (t.status||'').toLowerCase().includes('completed')).length;
+        const hold = allTasksData.filter(t => (t.status||'').toLowerCase().includes('hold')).length;
+        const cancelled = allTasksData.filter(t => (t.status||'').toLowerCase().includes('cancelled')).length;
+
+        // 3. Construct a specific prompt with these numbers
+        const prompt = `
+            I have exactly ${total} tasks in my project.
+            Breakdown:
+            - Pending: ${pending}
+            - In Progress: ${progress}
+            - Completed: ${completed}
+            - On Hold: ${hold}
+            - Cancelled: ${cancelled}
+            
+            Here is the task list:
+            ${JSON.stringify(allTasksData.map(t => t.Task_Name + ' (' + t.status + ')'))}
+
+            Please provide a short, professional project summary based on these exact numbers.
+        `;
+
+        // 4. Send to the /ask endpoint (Uses the AI to write text, but uses our numbers)
+        // Note: We use '/ask' instead of '/summary' so we can send our custom data.
+        const response = await fetch(`${API_BASE_URL}/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: prompt })
+        });
+
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        document.getElementById('summaryDisplay').innerHTML = 
+        
+        // 5. Display the result
+        // We handle both 'answer' (common in /ask) or 'summary' (common in /summary)
+        const aiText = data.answer || data.summary || data.response;
+
+        summaryDisplay.innerHTML = 
             `<div class="summary-box">
                 <h3>🧠 AI Project Summary</h3>
-                <p>${data.summary}</p>
-                <small>Generated: ${new Date(data.timestamp).toLocaleString()}</small>
+                <!-- We display our accurate stats at the top -->
+                <div style="display:flex; gap:10px; margin-bottom:10px; font-weight:bold; color:#555;">
+                    <span>Total: ${total}</span> | 
+                    <span style="color:#e67e22">Pending: ${pending}</span> | 
+                    <span style="color:#27ae60">Done: ${completed}</span>
+                </div>
+                <hr>
+                <p>${aiText}</p>
+                <small>Generated: ${new Date().toLocaleString()}</small>
             </div>`;
+
     } catch (error) {
         console.error('Summary error:', error);
         document.getElementById('summaryDisplay').innerHTML = 
-            '<div class="error">❌ Failed to generate summary. Check API connection.</div>';
+            `<div class="error">❌ Failed to generate summary. <br>Error: ${error.message}</div>`;
     }
 }
 
