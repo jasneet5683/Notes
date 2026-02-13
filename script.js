@@ -706,15 +706,14 @@ function renderStatusChart() {
 let resourceChartInstance = null;
 
 function renderResourceChart() {
-    // 1. Safety Check: Do we have data?
     if (!allTasksData || allTasksData.length === 0) {
-        alert("No data available. Please click 'Refresh Data' first.");
+        alert("No data available. Please refresh.");
         return;
     }
 
     const ctx = document.getElementById('resourceChart');
     
-    // 2. Aggregate Data: Count Tasks per Client
+    // 1. Process Data
     const clientCounts = {};
     allTasksData.forEach(task => {
         const client = (task.Client || 'General').trim();
@@ -724,12 +723,12 @@ function renderResourceChart() {
     const labels = Object.keys(clientCounts);
     const dataValues = Object.values(clientCounts);
 
-    // 3. Destroy old chart if exists (prevents glitching)
+    // 2. Destroy old chart to prevent glitches
     if (resourceChartInstance) {
         resourceChartInstance.destroy();
     }
 
-    // 4. Draw the Bar Chart
+    // 3. Draw Chart with Multiple Colors
     resourceChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -737,8 +736,25 @@ function renderResourceChart() {
             datasets: [{
                 label: 'Tasks Assigned',
                 data: dataValues,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)', // Blue fill
-                borderColor: 'rgba(54, 162, 235, 1)',      // Blue border
+                // Pass an ARRAY of colors here:
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',   // Red
+                    'rgba(54, 162, 235, 0.7)',   // Blue
+                    'rgba(255, 206, 86, 0.7)',   // Yellow
+                    'rgba(75, 192, 192, 0.7)',   // Green
+                    'rgba(153, 102, 255, 0.7)',  // Purple
+                    'rgba(255, 159, 64, 0.7)',   // Orange
+                    'rgba(201, 203, 207, 0.7)'   // Grey
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(201, 203, 207, 1)'
+                ],
                 borderWidth: 1,
                 borderRadius: 4
             }]
