@@ -363,12 +363,16 @@
                 <div id="chatMessages" class="chat-messages">
                     <div class="message bot">👋 Hi! Ask me to "List tasks in a table" or "Show me a pie chart of status".</div>
                 </div>
-                <form id="chatForm" onsubmit="sendChat(event)">
-                    <div class="grid">
-                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
-                        <button type="submit" class="btn-submit">📤 Send Message</button>
-                        <button onclick="toggleChatVoice()" id="btn-mic" class="icon-btn" title="Voice Command">🎙️</button>
-                    </div>
+                <form id="chatForm" onsubmit="sendChat(event)" style="display: flex; gap: 10px; align-items: center;">
+                        <!-- Input grows to fill space -->
+                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required style="margin: 0; flex-grow: 1;">
+    
+                        <!-- MIC BUTTON: Added type="button" so it doesn't submit the form -->
+                        <button type="button" onclick="toggleChatVoice()" id="btn-mic" class="icon-btn" title="Voice Command" style="width: auto; padding: 10px 15px; background: #e2e8f0; color: #333;">
+                        🎙️
+                        </button>
+                        <!-- SUBMIT BUTTON -->
+                        <button type="submit" class="btn-submit" style="width: auto;">📤 Send </button>
                 </form>
             </div>
         </div>
