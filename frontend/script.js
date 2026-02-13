@@ -847,3 +847,5 @@ window.downloadTasksCSV = downloadTasksCSV;
 window.downloadSummary = downloadSummary;
 window.renderStatusChart = renderStatusChart;
 window.renderResourceChart = renderResourceChart;
+window.toggleChatVoice = toggleChatVoice;
+
