@@ -244,7 +244,59 @@
     opacity: 0;
     animation-fill-mode: forwards;
 }
+/* --- NEW CHAT INPUT STYLES (Add to bottom of CSS) --- */
 
+.chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between input and buttons */
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Ensure input takes available space */
+.chat-controls input {
+    margin: 0; /* Overrides global input margin */
+    flex: 1;
+    border-radius: 20px;
+    padding: 10px 15px;
+}
+
+/* Icon Buttons (Mic & Send) */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 8px 12px;
+    border-radius: 50%;
+    color: #667eea; /* Matches your theme purple */
+    transition: all 0.2s ease;
+    flex: 0 0 auto; /* Prevents squishing */
+    box-shadow: none; /* Removes global button shadow */
+}
+
+.icon-btn:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.1);
+}
+
+/* --- LISTENING ANIMATION --- */
+.icon-btn.listening {
+    color: #dc3545 !important; /* Red */
+    background-color: #ffebee !important;
+    animation: mic-pulse 1.5s infinite;
+}
+
+@keyframes mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+        
         .loading { text-align: center; color: #666; padding: 20px; }
         .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
         .success { color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; }
@@ -315,6 +367,7 @@
                     <div class="grid">
                         <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required>
                         <button type="submit" class="btn-submit">📤 Send Message</button>
+                        <button onclick="toggleChatVoice()" id="btn-mic" class="icon-btn" title="Voice Command">🎙️</button>
                     </div>
                 </form>
             </div>
