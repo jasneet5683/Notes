@@ -177,7 +177,24 @@ def generate_ai_response(
         # ---------------------------------------------------------
         # ⚠️ FIX APPLIED BELOW: JSON braces { } replaced with {{ }}
         # ---------------------------------------------------------
-        system_prompt = f"""You are a helpful project management assistant. 
+        system_prompt = f"""You are an intelligent project management assistant. 
+        Your Goal:
+        1. Listen to the user's request.
+        2. If the request involves tasks (adding, updating, deleting) or is a long sentence, 
+           IMMEDIATELY generate a "📝 Summary of Intent" as a bulleted list.
+        3. Use HTML formatting (<ul>, <li>, <b>) for the list so it renders nicely in the chat.
+    
+        Example Output format:
+        <div class="summary-box">
+          <b>📝 I understood the following:</b>
+          <ul>
+            <li>Action: Add new task "Update Homepage"</li>
+            <li>Assignee: John Doe</li>
+            <li>Deadline: Next Friday</li>
+          </ul>
+        </div>
+        <p>I will process this now...</p>
+        
         Today's Date: {today_date}
         TASK LIST:
         {tasks_context}
