@@ -232,7 +232,7 @@ def generate_ai_response(
         # --- 1. FIRST API CALL ---
         print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",  # gpt-3.5-turbo
             messages=messages,
             tools=tools,
             tool_choice="auto",
@@ -322,7 +322,7 @@ def generate_ai_response(
 
             # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=messages
             )
             return second_response.choices[0].message.content.strip()
@@ -359,7 +359,7 @@ def summarize_tasks() -> str:
         tasks_context = format_tasks_for_context(tasks)
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {
                     "role": "system",
@@ -386,7 +386,7 @@ def simple_ai_chat(user_prompt: str) -> str:
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a helpful project assistant. user will provide data stats, you simply analyze them."},
                 {"role": "user", "content": user_prompt}
