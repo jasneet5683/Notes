@@ -771,6 +771,69 @@ function renderResourceChart() {
     });
 }
 
+// --- STEP 1: VOICE TO TEXT LOGIC ---
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+let isListening = false;
+
+// Check if browser supports it
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false; // Stop after one sentence
+    recognition.lang = 'en-US';
+    recognition.interimResults = true; // Show text AS you speak
+
+    // 1. When Voice Starts
+    recognition.onstart = function() {
+        isListening = true;
+        const btn = document.getElementById("btn-mic");
+        const input = document.getElementById("chatInput");
+        
+        btn.classList.add("listening"); // Start Red Pulse
+        input.placeholder = "Listening... Speak now...";
+    };
+
+    // 2. When Voice Ends
+    recognition.onend = function() {
+        isListening = false;
+        const btn = document.getElementById("btn-mic");
+        const input = document.getElementById("chatInput");
+        
+        btn.classList.remove("listening"); // Stop Pulse
+        input.placeholder = "Type or speak...";
+        
+        // Optional: Auto-focus the input so you can edit if needed
+        input.focus();
+    };
+
+    // 3. Handle the Result
+    recognition.onresult = function(event) {
+        let transcript = "";
+        // Loop through results (handles mid-sentence pauses)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+        }
+        
+        // Type it into the input box
+        document.getElementById("chatInput").value = transcript;
+    };
+}
+
+// Toggle Function (Clicking the Mic)
+function toggleChatVoice() {
+    if (!SpeechRecognition) {
+        alert("Voice features are not supported in this browser. Try Chrome.");
+        return;
+    }
+
+    if (isListening) {
+        recognition.stop();
+    } else {
+        recognition.start();
+    }
+}
+
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
