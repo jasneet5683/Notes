@@ -702,6 +702,59 @@ function renderStatusChart() {
     });
 }
 
+// Variable to store the chart instance so we can destroy/redraw it
+let resourceChartInstance = null;
+
+function renderResourceChart() {
+    // 1. Safety Check: Do we have data?
+    if (!allTasksData || allTasksData.length === 0) {
+        alert("No data available. Please click 'Refresh Data' first.");
+        return;
+    }
+
+    const ctx = document.getElementById('resourceChart');
+    
+    // 2. Aggregate Data: Count Tasks per Client
+    const clientCounts = {};
+    allTasksData.forEach(task => {
+        const client = (task.Client || 'General').trim();
+        clientCounts[client] = (clientCounts[client] || 0) + 1;
+    });
+
+    const labels = Object.keys(clientCounts);
+    const dataValues = Object.values(clientCounts);
+
+    // 3. Destroy old chart if exists (prevents glitching)
+    if (resourceChartInstance) {
+        resourceChartInstance.destroy();
+    }
+
+    // 4. Draw the Bar Chart
+    resourceChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Tasks Assigned',
+                data: dataValues,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)', // Blue fill
+                borderColor: 'rgba(54, 162, 235, 1)',      // Blue border
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
@@ -714,3 +767,4 @@ window.clearTasksList = clearTasksList;
 window.downloadTasksCSV = downloadTasksCSV;
 window.downloadSummary = downloadSummary;
 window.renderStatusChart = renderStatusChart;
+window.renderResourceChart = renderResourceChart;
