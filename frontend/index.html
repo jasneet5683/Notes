@@ -215,6 +215,35 @@
             grid-template-columns: 1fr; 
         }
     }
+/* Define the animation */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px); /* Start 20px lower */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Apply it to your boxes */
+.split-box {
+    animation: slideUpFade 0.6s ease-out forwards; /* Runs once on load */
+}
+
+/* Stagger the right side boxes so they appear after the left one */
+.right-panel-wrapper .split-box:nth-child(1) {
+    animation-delay: 0.2s; /* Chart appears slightly later */
+    opacity: 0; /* Hidden initially */
+    animation-fill-mode: forwards; /* Stays visible after animation */
+}
+
+.right-panel-wrapper .split-box:nth-child(2) {
+    animation-delay: 0.4s; /* Table appears last */
+    opacity: 0;
+    animation-fill-mode: forwards;
+}
 
         .loading { text-align: center; color: #666; padding: 20px; }
         .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
