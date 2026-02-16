@@ -178,7 +178,10 @@ def generate_ai_response(
         # ⚠️ FIX APPLIED BELOW: JSON braces { } replaced with {{ }}
         # ---------------------------------------------------------
         system_prompt = f"""You are an intelligent project management assistant. 
-        Your Goal:
+        Today's Date: {today_date}
+        TASK LIST:
+        {tasks_context}
+        
         1. Listen to the user's request.
         2. If the request involves tasks (adding, updating, deleting) or is a long sentence, 
            IMMEDIATELY generate a "📝 Summary of Intent" as a bulleted list.
