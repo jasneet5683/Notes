@@ -11,6 +11,7 @@ class TaskInput(BaseModel):
     status: str = Field(default="Not Started", description="Current task status")
     client: str = Field(default="General", description="Client name")
     priority: str = Field(default="Medium", description="Task priority level")
+    successor: Optional[str] ="" 
 
 class TaskUpdate(BaseModel):
     """Model for updating task status"""
