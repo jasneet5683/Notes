@@ -145,7 +145,9 @@ async function loadAllTasks() {
             `;
             // ✅ NEW: Trigger AI Summary automatically now that data is ready
             console.log("Data loaded. Triggering AI Summary...");
-            getSummary(); 
+            renderResourceChart(); // <--- 1. Load Resource Chart
+            renderStatusChart();   // <--- 2. Load Status Chart
+            getSummary();          // <--- 3. Load AI Summary
         } else {
             document.getElementById('taskList').innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
         }
