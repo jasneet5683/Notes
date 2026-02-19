@@ -165,7 +165,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
         status: document.getElementById('status').value,
         priority: String(document.getElementById('priority').value || "1"),
         notify_email: document.getElementById('notifyEmail').value.trim() || null,
-        predecessor: document.getElementById('successor').value 
+        predecessor: document.getElementById('predecessor').value 
     };
     
     try {
