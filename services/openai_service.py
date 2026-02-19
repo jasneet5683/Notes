@@ -91,9 +91,24 @@ def generate_ai_response(
                             "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned'."},
                             "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level."},
                             "end_date": {"type": "string", "description": "Due date (YYYY-MM-DD)."},
-                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name."}
+                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name."},
+                            # --- NEW FIELD ADDED HERE ---
+                            "predecessor_name": {"type": "string", "description": "The name of the task that this new task must come AFTER (dependency)."}
                         },
                         "required": ["task_name"]
+                    }
+                }
+            },
+            # --- NEW TOOL FOR CONFLICT CHECKING ---
+            {
+                "type": "function",
+                "function": {
+                    "name": "check_schedule_conflicts",
+                    "description": "Check if any tasks start before their predecessors end (dependency conflicts).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}, # No arguments needed
+                        "required": []
                     }
                 }
             },
@@ -105,18 +120,9 @@ def generate_ai_response(
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "recipient_email": {
-                                "type": "string", 
-                                "description": "The email address of the recipient. If not specified, leave empty (backend will use default admin)."
-                            },
-                            "subject": {
-                                "type": "string", 
-                                "description": "The subject line of the email."
-                            },
-                            "email_body": {
-                                "type": "string", 
-                                "description": "The full content of the email. If the user asks for a summary, YOU (the AI) must generate the summary text here."
-                            }
+                            "recipient_email": {"type": "string", "description": "The email address."},
+                            "subject": {"type": "string", "description": "The subject line."},
+                            "email_body": {"type": "string", "description": "The full content."}
                         },
                         "required": ["subject", "email_body"]
                     }
@@ -130,18 +136,9 @@ def generate_ai_response(
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "target_month": {
-                                "type": "integer", 
-                                "description": "The month number (1-12)."
-                            },
-                            "target_year": {
-                                "type": "integer", 
-                                "description": "The 4-digit year. Example: 2026."
-                            },
-                            "target_date": {
-                                "type": "string",
-                                "description": "Specific date in YYYY-MM-DD format."
-                            }
+                            "target_month": {"type": "integer"},
+                            "target_year": {"type": "integer"},
+                            "target_date": {"type": "string"}
                         }
                     }
                 }
@@ -150,23 +147,13 @@ def generate_ai_response(
                 "type": "function",
                 "function": {
                     "name": "get_task_statistics",
-                    "description": "Get counts of tasks. Useful for generating graphs.",
+                    "description": "Get counts of tasks for graphs.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "group_by": {
-                                "type": "string",
-                                "enum": ["status", "priority", "assigned_to", "month"],
-                                "description": "What to count. Use 'month' for time trends."
-                            },
-                            "target_month": {
-                                "type": "integer", 
-                                "description": "Filter by month (1-12). Optional."
-                            },
-                            "target_year": {
-                                "type": "integer", 
-                                "description": "Filter by year (e.g. 2026). Optional."
-                            }
+                            "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
+                            "target_month": {"type": "integer"},
+                            "target_year": {"type": "integer"}
                         },
                         "required": ["group_by"]
                     }
@@ -174,18 +161,17 @@ def generate_ai_response(
             }
         ]
 
-        # ---------------------------------------------------------
-        # ⚠️ FIX APPLIED BELOW: JSON braces { } replaced with {{ }}
-        # ---------------------------------------------------------
         system_prompt = f"""You are an intelligent project management assistant. 
         Today's Date: {today_date}
         TASK LIST:
         {tasks_context}
         
-        1. Listen to the user's request.
-        2. If the request involves tasks (adding, updating, deleting) or is a long sentence, 
+        INSTRUCTIONS:
+        1. Listen to the user's request
+        2. Search through tasks list carefully.
+        3. If the request involves tasks (adding, updating, deleting) or is a long sentence, 
            IMMEDIATELY generate a "📝 Summary of Intent" as a bulleted list.
-        3. Use HTML formatting (<ul>, <li>, <b>) for the list so it renders nicely in the chat.
+        Use HTML formatting (<ul>, <li>, <b>) for the list so it renders nicely in the chat.
     
         Example Output format:
         <div class="summary-box">
@@ -197,15 +183,12 @@ def generate_ai_response(
           </ul>
         </div>
         <p>I will process this now...</p>
-        
-        Today's Date: {today_date}
-        TASK LIST:
-        {tasks_context}
-        INSTRUCTIONS:
-        - Search through the task list carefully.
-        - When users ask about dates, compare the 'End Date' in the list with 'Today's Date'.
-        - If a user explicitly asks to CHANGE or UPDATE a task, use the 'update_task_field' tool.
-        
+
+        4. Also If the user adds a task and mentions "after [Task Name]" or "dependent on [Task Name]", use the 'predecessor_name' field.
+        5. If the user asks "Is my schedule okay?" or "Check for conflicts", call 'check_schedule_conflicts'.
+        6. When users ask about dates, compare the 'End Date' in the list with 'Today's Date'.
+        7. If a user explicitly asks to CHANGE or UPDATE a task, use the 'update_task_field' tool.
+        8. Use HTML formatting for lists.
         FORMATTING RULES:
         1. TABLES: If the user wants a list, output a Markdown Table.
         2. GRAPHS: If the user asks for a chart/graph, call 'get_task_statistics' first. 
@@ -235,7 +218,7 @@ def generate_ai_response(
         # --- 1. FIRST API CALL ---
         print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
-            model="gpt-4",  # gpt-3.5-turbo
+            model="gpt-4", 
             messages=messages,
             tools=tools,
             tool_choice="auto",
@@ -272,17 +255,22 @@ def generate_ai_response(
                             new_value=args.get("new_value")
                         )
                     
-                    elif function_name == "add_task_from_ai" or function_name == "add_task_to_sheet":
+                    elif function_name == "add_task_from_ai":
+                        # --- UPDATED ARGUMENTS HERE ---
                         function_response = add_task_from_ai(
                             task_name=args.get("task_name"),
                             assigned_to=args.get("assigned_to", "Unassigned"),
                             priority=args.get("priority", "Medium"),
                             end_date=args.get("end_date", ""),
-                            client=args.get("client", "General")
+                            client=args.get("client", "General"),
+                            predecessor_name=args.get("predecessor_name", "") # <--- PASSING THE NEW ARG
                         )
+
+                    elif function_name == "check_schedule_conflicts":
+                        # --- NEW FUNCTION CALL ---
+                        function_response = check_schedule_conflicts()
                         
                     elif function_name == "send_project_email":
-                        print("🔹 Attempting to send email...", flush=True)
                         function_response = send_email_via_brevo(
                             subject=args.get("subject"),
                             email_body=args.get("email_body"),
@@ -290,7 +278,6 @@ def generate_ai_response(
                         )
 
                     elif function_name == "filter_tasks_by_date":
-                        print("🔹 Filtering tasks...", flush=True)
                         function_response = filter_tasks_by_date(
                             target_month=args.get("target_month"),
                             target_year=args.get("target_year"),
@@ -298,7 +285,6 @@ def generate_ai_response(
                         )
 
                     elif function_name == "get_task_statistics":
-                        print("🔹 Calculating stats...", flush=True)
                         function_response = get_task_statistics(
                             group_by=args.get("group_by"),
                             target_month=args.get("target_month"),
@@ -306,14 +292,11 @@ def generate_ai_response(
                         )
                         
                     else:
-                        print(f"❌ NAME MISMATCH: {function_name}", flush=True)
                         function_response = f"Error: Function {function_name} not found."
 
                 except Exception as e:
                     print(f"❌ EXECUTION ERROR: {e}", flush=True)
                     function_response = f"Error executing tool: {str(e)}"
-                
-                print(f"🔹 FUNCTION RESULT: {function_response}", flush=True)
                 
                 # APPEND RESULT
                 messages.append({
