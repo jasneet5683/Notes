@@ -23,19 +23,28 @@ def format_tasks_for_context(tasks: List) -> str:
     
     formatted_tasks = []
     for task in tasks:
-        # UPDATED: Added Start Date, End Date, and Client
+        # 1. Get the Predecessor value safely
+        pred_val = str(task.get('predecessor', task.get('successor', ''))).strip()
+        if not pred_val or pred_val.lower() == 'none':
+            pred_val = "None"
+
+        # 2. UPDATED String Format
+        # We added [ID: ...] at the start and | Predecessor: ... at the end
         task_info = (
-            f"• Task: {task.get('Task_Name', 'Unknown')} | "
+            f"• [ID: {task.get('task_id', 'N/A')}] "  # <--- CRITICAL: Added ID so AI can link tasks
+            f"Task: {task.get('Task_Name', 'Unknown')} | "
             f"Assigned: {task.get('assigned_to', 'Unassigned')} | "
             f"Status: {task.get('status', 'Unknown')} | "
             f"End Date: {task.get('end_date', 'N/A')} | " 
             f"Start Date: {task.get('start_date', 'N/A')} | "
             f"Client: {task.get('Client', 'N/A')} | " 
-            f"Priority: {task.get('Priority', 'N/A')}"
+            f"Priority: {task.get('Priority', 'N/A')} | "
+            f"Predecessor ID: {pred_val}"  # <--- CRITICAL: Added Dependency
         )
         formatted_tasks.append(task_info)
     
     return f"Current Tasks in System:\n" + "\n".join(formatted_tasks)
+
 
 def filter_tasks_by_assignee(tasks: List, assignee_name: str) -> List:
     """Filter tasks for a specific assignee (case-insensitive)"""
