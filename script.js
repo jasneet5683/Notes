@@ -143,6 +143,9 @@ async function loadAllTasks() {
                 </div>
                 ${data.tasks.map(task => createTaskCard(task)).join('')}
             `;
+            // ✅ NEW: Trigger AI Summary automatically now that data is ready
+            console.log("Data loaded. Triggering AI Summary...");
+            getSummary(); 
         } else {
             document.getElementById('taskList').innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
         }
@@ -849,4 +852,5 @@ window.downloadSummary = downloadSummary;
 window.renderStatusChart = renderStatusChart;
 window.renderResourceChart = renderResourceChart;
 window.toggleChatVoice = toggleChatVoice;
+document.addEventListener('DOMContentLoaded', () => {loadAllTasks()});
 
