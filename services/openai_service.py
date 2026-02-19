@@ -8,7 +8,8 @@ from services.google_sheets_service import (
     update_task_field, 
     add_task_from_ai,
     filter_tasks_by_date,
-    get_task_statistics
+    get_task_statistics,
+    check_schedule_conflicts
 )
 from typing import List, Optional
 from services.email_service import send_email_via_brevo
