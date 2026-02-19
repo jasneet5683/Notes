@@ -176,51 +176,35 @@ def generate_ai_response(
         TASK LIST:
         {tasks_context}
 
-        ### CORE OPERATING MODE: LISTEN -> SUMMARIZE -> ACTION ###
-        **STEP 1: LISTEN & ANALYZE (Sentiment & Intent)**
-        - **Context:** Identify the client/project (e.g., "Batelco").
-        - **Sentiment/Priority:**
-            - "Bad meeting", "Angry", "Urgent", "Blocker" -> **Priority: HIGH/CRITICAL**
-            - "Shared info", "Planning", "Routine", "Update" -> **Priority: LOW/MEDIUM**
-        - **Identify Actions:** look for keywords like "start by", "launch by", "sign by".
-            - *CRITICAL:* If the user lists multiple dates/items (e.g., "Launch 30-March, Sign 10-April"), you **MUST** identify them as **SEPARATE TASKS**.
-        **STEP 2: SUMMARIZE (The Output)**
-        Before executing tools, you must output a "Plan of Action" in this HTML format:
-        <div class="summary-box">
-          <b>📝 Summary of Request:</b>
-          <ul>
-            <li><b>Context:</b> [e.g., Batelco Business Update]</li>
-            <li><b>Detected Sentiment:</b> [e.g., Routine Info (Low Priority)]</li>
-            <li><b>Identified Tasks:</b>
-                <ul>
-                    <li>Task 1: [Name] (Due: [Date])</li>
-                    <li>Task 2: [Name] (Due: [Date])</li>
-                </ul>
-            </li>
-            <li><b>Assignee:</b> [Name]</li>
-          </ul>
-        </div>
-        **STEP 3: ACTION (The Tool Calls)**
-        - **Generate Function Calls:** 
-          - Call `add_task` for **EACH** item identified in Step 1.
-          - **DO NOT** combine them into one task.
-          - **DO NOT** skip the second task.
-          - **Predecessor:** If not explicitly mentioned, pass an empty string `""`.
-          - **Dates:** Convert to 'YYYY-MM-DD'.
-        **EXAMPLE SCENARIO:**
-        Input: "Batelco launch 30-March, Sign 10-April. Assign Jasneet."
-        Logic:
-        1. Priority = Medium (Planning).
-        2. Task 1 = "Batelco Launch" (Due: 2024-03-30).
-        3. Task 2 = "Batelco Sign-off" (Due: 2024-04-10).
-        4. Assignee = "Jasneet" (Applies to ALL).
-        Action: Call `add_task` TWICE.
-        - **HANDLING DATA & DEFAULTS (CRITICAL):**
-               - **Dates:** Convert "7-March" or "Next Friday" to 'YYYY-MM-DD'.
-               - **Predecessor/Dependency:** This is **OPTIONAL**. 
-                    - If the user DOES NOT say "after [Task]" or "depends on [Task]", **pass an empty string ("")** to the tool. 
-                    - **DO NOT** ask the user for a predecessor. Just add the task.
-        - **DEPENDENCIES:**
+        ### OPERATIONAL PROTOCOL: LISTEN -> SUMMARIZE -> ACT
+        You must strictly follow this 3-step process for every user input.
+        ---
+        ### PHASE 1: LISTEN & ANALYZE (Internal Logic)
+        1.  **Detect Intent:** Does the user mention a meeting, a plan, or an urgent issue?
+        2.  **Determine Priority:**
+            -   **LOW/MEDIUM:** "Shared info", "Planning", "Update", "Routine", "Follow up". (e.g., "Batelco shared info").
+            -   **HIGH/CRITICAL:** "Angry", "Escalation", "Urgent", "Blocker", "Deadline missed".
+        3.  **Multi-Task Detection (CRITICAL):**
+            -   If the user mentions multiple milestones (e.g., "Launch by X, Sign by Y"), you must identify them as **SEPARATE TASKS**.
+            -   Do not bundle them into one generic task.
+        ---
+        ### PHASE 2: SUMMARIZE (User Output)
+        **BEFORE** calling any tools, you must output a structured summary to the user in this format:
+        **📝 Project Update Summary:**
+        *   **Context:** [Briefly state the context, e.g., Meeting with Batelco]
+        *   **Key Updates:**
+            *   [Point 1]
+            *   [Point 2]
+        *   **Action Plan:** Creating [Number] tasks with [Priority Level] priority.
+        ---
+        ### PHASE 3: ACT (Tool Execution)
+        **IMMEDIATELY** after the summary, generate the tool calls for `add_task`.
+        **Rules for Tool Calls:**
+        1.  **Split Tasks:** If Phase 1 identified multiple dates/items, call `add_task` multiple times (Parallel Function Calling).
+        2.  **Naming:** Use clear, short names (e.g., "Batelco Launch" instead of "They are planning to launch").
+        3.  **Assignee:** Apply the assignee (e.g., Jasneet) to ALL generated tasks if implied.
+        4.  **Dates:** Standardize to YYYY-MM-DD.
+         - **DEPENDENCIES:**
            - If the user says "after [Task A]", set 'predecessor_name' to [Task A].
         - **SCHEDULE CHECKS:**
            - If asked "Is my schedule okay?", call 'check_schedule_conflicts'.
