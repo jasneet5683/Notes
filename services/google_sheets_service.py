@@ -102,7 +102,7 @@ def add_task_to_sheet(task: TaskInput, successor: str = "") -> Dict:
             task.assigned_to,
             task.client,
             task.priority,
-            task.successor  # New field
+            task.predecessor  # New field
         ]
         
         worksheet.append_row(new_row)
@@ -117,7 +117,7 @@ def add_task_to_sheet(task: TaskInput, successor: str = "") -> Dict:
         return {"success": False, "error": str(e)}
 #----- New AI Wrapper function
 def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", 
-                     end_date: str = "", client: str = "Unknown", successor: str = "") -> str:
+                     end_date: str = "", client: str = "Unknown", predecessor: str = "") -> str:
     """
     Wrapper for AI to add tasks. 
     Now supports an optional 'successor' argument.
