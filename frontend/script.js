@@ -507,14 +507,24 @@ function smartColorize(chartJson) {
 
 
 function getPriorityEmoji(priority) {
-    switch(priority) {
-        case 'low': return '🟢'; // Green
-        case 'medium': return '🟡'; // Yellow
-        case 'high': return '🟠'; // Orange
-        case 'critical': return '🔴'; // Red
-        case 'blocker': return '⛔'; // No Entry / Stop sign
-        case 'info': return '🔵'; // Blue circle
-        default: return '⚪'; // Grey/White for unknown
+    // Safety check: ensure priority is a string, default to empty if null/undefined
+    const p = (priority || '').toLowerCase(); 
+
+    switch (p) {
+        case 'Low': 
+            return '🟢'; // Green
+        case 'Medium': 
+            return '🟡'; // Yellow
+        case 'High': 
+            return '🟠'; // Orange
+        case 'Critical': 
+            return '🔴'; // Red
+        case 'Blocker': 
+            return '⛔'; // No Entry / Stop sign
+        case 'Info': 
+            return '🔵'; // Blue circle
+        default: 
+            return '⚪'; // Grey/White for unknown
     }
 }
 
