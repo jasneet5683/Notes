@@ -508,11 +508,13 @@ function smartColorize(chartJson) {
 
 function getPriorityEmoji(priority) {
     switch(priority) {
-        case 1: return '🟢'; // Low
-        case 2: return '🟡'; // Medium  
-        case 3: return '🟠'; // High
-        case 4: return '🔴'; // Critical
-        default: return '⚪'; // Unknown
+        case 'low': return '🟢'; // Green
+        case 'medium': return '🟡'; // Yellow
+        case 'high': return '🟠'; // Orange
+        case 'critical': return '🔴'; // Red
+        case 'blocker': return '⛔'; // No Entry / Stop sign
+        case 'info': return '🔵'; // Blue circle
+        default: return '⚪'; // Grey/White for unknown
     }
 }
 
