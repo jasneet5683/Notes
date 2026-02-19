@@ -102,7 +102,7 @@ def add_task_to_sheet(task: TaskInput, successor: str = "") -> Dict:
             task.assigned_to,
             task.client,
             task.priority,
-            successor  # New field
+            task.successor  # New field
         ]
         
         worksheet.append_row(new_row)
