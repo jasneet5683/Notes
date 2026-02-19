@@ -507,26 +507,25 @@ function smartColorize(chartJson) {
 
 
 function getPriorityEmoji(priority) {
-    // Safety check: ensure priority is a string, default to empty if null/undefined
-    const p = (priority || '').toLowerCase(); 
+    // 1. Convert to string safely
+    // 2. Remove extra spaces (.trim)
+    // 3. Make lowercase (.toLowerCase)
+    const p = String(priority || '').trim().toLowerCase();
+
+    // Debugging: Check the console to see exactly what the code sees
+    // console.log(`Priority detected: "${p}"`); 
 
     switch (p) {
-        case 'Low': 
-            return '🟢'; // Green
-        case 'Medium': 
-            return '🟡'; // Yellow
-        case 'High': 
-            return '🟠'; // Orange
-        case 'Critical': 
-            return '🔴'; // Red
-        case 'Blocker': 
-            return '⛔'; // No Entry / Stop sign
-        case 'Info': 
-            return '🔵'; // Blue circle
-        default: 
-            return '⚪'; // Grey/White for unknown
+        case 'low':      return '🟢';
+        case 'medium':   return '🟡';
+        case 'high':     return '🟠';
+        case 'critical': return '🔴';
+        case 'blocker':  return '⛔';
+        case 'info':     return '🔵';
+        default:         return '⚪'; // Still white? Check the console log above!
     }
 }
+
 
 function showNotification(message, type) {
     const notification = document.createElement('div');
