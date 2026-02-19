@@ -58,40 +58,75 @@ def fetch_all_tasks() -> List[Dict]:
         print(f"❌ Error fetching tasks: {e}")
         return []
 
-def add_task_to_sheet(task: TaskInput) -> bool:
-    """Add a new task to Google Sheets"""
+def add_task_to_sheet(task: TaskInput, successor: str = "") -> Dict:
+    """
+    Add a new task to Google Sheets with auto-incremented task_id.
+    
+    New Row Structure:
+    [task_id, task_name, start_date, end_date, status, assigned_to, client, priority, successor]
+    """
     try:
         worksheet = get_google_sheet()
         if not worksheet:
-            return False
+            return {"success": False, "error": "Could not connect to Google Sheets"}
         
+        # 1. Fetch all existing records to calculate the next ID
+        all_records = worksheet.get_all_records()
+        
+        # 2. Calculate Next ID
+        if not all_records:
+            next_id = 1
+        else:
+            existing_ids = []
+            for record in all_records:
+                # Safely extract IDs (handling potential strings/empty cells)
+                try:
+                    # Assumes task_id is the first column (key: 'task_id')
+                    # Adjust key string if your header is different, e.g., 'ID'
+                    tid = record.get("task_id", 0) 
+                    if str(tid).isdigit():
+                        existing_ids.append(int(tid))
+                except (ValueError, TypeError):
+                    continue
+            
+            next_id = (max(existing_ids) + 1) if existing_ids else 1
+        
+        # 3. Build the new row
+        # Order: ID | Name | Start | End | Status | Assigned | Client | Priority | Successor
         new_row = [
+            next_id,
             task.task_name,
             task.start_date,
             task.end_date,
             task.status,
             task.assigned_to,
             task.client,
-            task.priority
+            task.priority,
+            successor  # New field
         ]
+        
         worksheet.append_row(new_row)
-        return True
+        
+        return {
+            "success": True, 
+            "task_id": next_id, 
+            "message": f"Task '{task.task_name}' added with ID: {next_id}"
+        }
     except Exception as e:
         print(f"❌ Error adding task: {e}")
-        return False
-
+        return {"success": False, "error": str(e)}
 #----- New AI Wrapper function
-def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", end_date: str = "", client: str = "Unknown") -> str:
+def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: str = "Medium", 
+                     end_date: str = "", client: str = "Unknown", successor: str = "") -> str:
     """
     Wrapper for AI to add tasks. 
-    Converts string arguments into a TaskInput object and calls the main function.
+    Now supports an optional 'successor' argument.
     """
     try:
         # 1. Set Defaults
         current_date = datetime.now().strftime("%Y-%m-%d")
         
-        # 2. Create the TaskInput object (This matches your Pydantic model)
-        # Note: We default 'client' to 'General' and 'status' to 'Pending'
+        # 2. Create the TaskInput object
         new_task_input = TaskInput(
             task_name=task_name,
             start_date=current_date,
@@ -101,14 +136,18 @@ def add_task_from_ai(task_name: str, assigned_to: str = "Unassigned", priority: 
             client=client, 
             priority=priority
         )
-        # 3. Call your EXISTING function
-        success = add_task_to_sheet(new_task_input)
-        if success:
-            return f"✅ Successfully added task '{task_name}'."
+        
+        # 3. Call the updated main function
+        result = add_task_to_sheet(new_task_input, successor=successor)
+        
+        if result["success"]:
+            return f"✅ {result['message']}"
         else:
-            return "❌ Failed to add task. Please check the logs."
+            return f"❌ Failed to add task: {result.get('error', 'Unknown error')}"
+            
     except Exception as e:
         return f"❌ Error: {str(e)}"
+
 
 
 def update_task_status(update: TaskUpdate) -> bool:
@@ -131,9 +170,9 @@ def update_task_status(update: TaskUpdate) -> bool:
             sheet_task_name = str(record.get("Task_Name", record.get("Task Name", ""))).strip().lower()
             
             if sheet_task_name == target_name_clean:
-                # 3. Update Column 4 (Status)
-                # Based on your order: Task(1), Start(2), End(3), Status(4)
-                worksheet.update_cell(idx, 4, update.new_status) 
+                # 3. Update Column 5 (Status)
+                # Based on your order: Task(2), Start(3), End(4), Status(5)
+                worksheet.update_cell(idx, 5, update.new_status) 
                 return True
         
         return False
