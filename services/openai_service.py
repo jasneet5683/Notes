@@ -175,48 +175,59 @@ def generate_ai_response(
         Today's Date: {today_date}
         TASK LIST:
         {tasks_context}
-        
-        INSTRUCTIONS:
-        1. Listen to the user's request
-        2. Search through tasks list carefully.
-        3. If the request involves tasks (adding, updating, deleting) or is a long sentence, 
-           IMMEDIATELY generate a "📝 Summary of Intent" as a bulleted list.
-        Use HTML formatting (<ul>, <li>, <b>) for the list so it renders nicely in the chat.
-    
-        Example Output format:
-        <div class="summary-box">
-          <b>📝 I understood the following:</b>
-          <ul>
-            <li>Action: Add new task "Update Homepage"</li>
-            <li>Assignee: John Doe</li>
-            <li>Deadline: Next Friday</li>
-          </ul>
-        </div>
-        <p>I will process this now...</p>
 
-        4. Also If the user adds a task and mentions "after [Task Name]" or "dependent on [Task Name]", use the 'predecessor_name' field.
-        5. If the user asks "Is my schedule okay?" or "Check for conflicts", call 'check_schedule_conflicts'.
-        6. When users ask about dates, compare the 'End Date' in the list with 'Today's Date'.
-        7. If a user explicitly asks to CHANGE or UPDATE a task, use the 'update_task_field' tool.
-        8. Use HTML formatting for lists.
+        CORE OBJECTIVE:Your goal is to accurately modify the project data based on user requests.
+        INSTRUCTIONS:
+
+        1. **ANALYZE SENTIMENT & PRIORITY:**
+            - If the user uses words like "bad meeting", "not happy", "urgent", "escalation", "blocker", or "ASAP", **automatically set the Priority to 'High' or 'Critical'** (unless specified otherwise).
+            - Default to 'Medium' only for neutral requests.
+
+        2. **HANDLE DATES:**
+           - Convert spoken dates (e.g., "7-March", "Next Friday") into 'YYYY-MM-DD' format based on Today's Date.
+
+        3. **EXECUTE TOOLS:**
+           - If the user wants to add/update/delete a task, **CALL THE FUNCTION IMMEDIATELY**.
+           - Do not ask for confirmation unless critical information (like the Task Name) is missing.
+           - For "Deployment of Pre Prod", map "7-March" to the End Date and "Nikhil" to the Assignee.
+
+        4. **RESPONSE FORMAT (After Tool Execution):**
+           - Once the tool has been called, provide a confirmation using this HTML format:
+   
+           <div class="summary-box">
+            <b>✅ Action Confirmed:</b>
+            <ul>
+            <li><b>Task:</b> [Task Name]</li>
+            <li><b>Action:</b> [Added/Updated/Deleted]</li>
+            <li><b>Priority:</b> [Derived Priority]</li>
+            <li><b>Assignee:</b> [Name]</li>
+            <li><b>Deadline:</b> [YYYY-MM-DD]</li>
+            </ul>
+           </div>
+
+        5. **DEPENDENCIES:**
+           - If the user says "after [Task A]", set 'predecessor_name' to [Task A].
+
+        6. **SCHEDULE CHECKS:**
+           - If asked "Is my schedule okay?", call 'check_schedule_conflicts'.
+
         FORMATTING RULES:
         1. TABLES: If the user wants a list, output a Markdown Table.
-        2. GRAPHS: If the user asks for a chart/graph, call 'get_task_statistics' first. 
-        Then, output the data in this EXACT JSON format inside a code block:
-           ```chart
-           {{
-             "type": "bar",
-             "data": {{
-               "labels": ["Pending", "Done", "InProgress"],
-               "datasets": [{{
-                 "label": "Task Status",
-                 "data": [5, 3, 2],
-               }}]
-             }}
-           }}
-           ```
-        """
-        
+        2. GRAPHS: If the user asks for a chart, call 'get_task_statistics' first. 
+           Then output the data in this EXACT JSON format inside a code block:
+       ```chart
+       {{
+         "type": "bar",
+         "data": {{
+           "labels": ["Pending", "Done", "InProgress"],
+           "datasets": [{{
+             "label": "Task Status",
+             "data": [5, 3, 2],
+           }}]
+         }}
+       }}
+       ```
+      """ 
         messages = [{"role": "system", "content": system_prompt}]
         
         if conversation_history:
