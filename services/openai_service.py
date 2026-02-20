@@ -324,7 +324,11 @@ def generate_ai_response(
                         function_response = add_task_from_ai(**args)
 
                     elif function_name == "update_task_field":
-                        function_response = update_task_field(**args)
+                        # Call the function
+                        result_dict = update_task_field(**args)
+                        # Extract just the message string for the AI to read
+                        # If we don't do this, the AI might get confused receiving a raw JSON object
+                        function_response = result_dict["message"]
 
                     elif function_name == "check_schedule_conflicts":
                         function_response = check_schedule_conflicts() # No args needed
