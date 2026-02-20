@@ -78,26 +78,36 @@ def generate_ai_response(
         # --- TOOL DEFINITIONS ---
         tools = [
     {
-        "type": "function",
-        "function": {
-            "name": "update_task_field",
-            "description": "Update a specific detail of a project task.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    # --- NEW FIELD: The Summary lives here ---
-                    "request_analysis": {
-                        "type": "string", 
-                        "description": "A brief summary of WHY this update is being made based on user input."
-                    },
-                    "task_name": {"type": "string", "description": "The exact name of the task."},
-                    "field_type": {"type": "string", "enum": ["status", "priority", "assigned_to", "end_date"]},
-                    "new_value": {"type": "string", "description": "The new value to set."}
+    "type": "function",
+    "function": {
+        "name": "update_task_field",
+        "description": "Update a specific detail of a project task.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                # The AI generates this analysis:
+                "request_analysis": {
+                    "type": "string", 
+                    "description": "A brief summary of WHY this update is being made based on user input."
                 },
-                "required": ["request_analysis", "task_name", "field_type", "new_value"]
-            }
+                "task_name": {
+                    "type": "string", 
+                    "description": "The exact name of the task."
+                },
+                "field_type": {
+                    "type": "string", 
+                    # ✅ ADD "predecessor" HERE
+                    "enum": ["status", "priority", "assigned_to", "end_date", "predecessor"]
+                },
+                "new_value": {
+                    "type": "string", 
+                    "description": "The new value to set."
+                }
+            },
+            "required": ["request_analysis", "task_name", "field_type", "new_value"]
         }
-    },
+    }
+},
     {
         "type": "function",
         "function": {
