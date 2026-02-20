@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from openai import OpenAI
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, GROQ_API_KEY
 from services.google_sheets_service import (
     fetch_all_tasks, 
     update_task_field, 
