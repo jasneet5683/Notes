@@ -155,38 +155,50 @@ def generate_ai_response(
             }
         }
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "filter_tasks_by_date",
-            "description": "Filter tasks by date.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "target_month": {"type": "integer"},
-                    "target_year": {"type": "integer"},
-                    "target_date": {"type": "string"}
+            
+            {
+                "type": "function",
+                "function": {
+                    "name": "filter_tasks_by_date",
+                    "description": "Filter and list tasks based on a specific month, year, or exact date.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            # --- ADD THIS ---
+                            "request_analysis": {
+                                "type": "string",
+                                "description": "Why are we filtering? (e.g., 'Checking tasks for March')."
+                            },
+                            "target_month": {"type": "integer"},
+                            "target_year": {"type": "integer"},
+                            "target_date": {"type": "string"}
+                        },
+                        "required": ["request_analysis"] # Make it required
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_task_statistics",
+                    "description": "Get counts of tasks for graphs.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            # --- ADD THIS ---
+                            "request_analysis": {
+                                "type": "string",
+                                "description": "Summary of the stats request (e.g., 'Analyzing status breakdown')."
+                            },
+                            "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
+                            "target_month": {"type": "integer"},
+                            "target_year": {"type": "integer"}
+                        },
+                        "required": ["request_analysis", "group_by"] # Make it required
+                    }
                 }
             }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_task_statistics",
-            "description": "Get counts of tasks for graphs.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
-                    "target_month": {"type": "integer"},
-                    "target_year": {"type": "integer"}
-                },
-                "required": ["group_by"]
-            }
-        }
-    }
-]
+        ]
 
         system_prompt = f"""You are an intelligent project management assistant. 
         Today's Date: {today_date}
@@ -196,7 +208,8 @@ def generate_ai_response(
         ### PROTOCOL: LISTEN -> ANALYZE -> ACT
         1. Listen to the user's meeting notes or request.
         2. Analyze the priority, context, and required actions.
-        3. EXECUTE the appropriate tool.
+        3. Fill the `request_analysis` field in the tool with your plan.
+        4. EXECUTE the appropriate tool.
 
         ### PHASE 1: LISTEN & ANALYZE (Internal Logic)
         1.  **Detect Intent:** Does the user mention a meeting, a plan, or an urgent issue?
@@ -227,9 +240,15 @@ def generate_ai_response(
            - If the user says "after [Task A]", set 'predecessor_name' to [Task A].
         - **SCHEDULE CHECKS:**
            - If asked "Is my schedule okay?", call 'check_schedule_conflicts'.
+        ### Stats LOGIC:
+        - For "how many", "stats", or "percentage", use `get_task_statistics`.
+        - For specific lists of tasks, use `filter_tasks_by_date`.
         FORMATTING RULES:
-        1. TABLES: If the user wants a list, output a Markdown Table.
-        2. GRAPHS: If the user asks for a chart, call 'get_task_statistics' first. 
+        1. **NEVER** use the XML format like `<function=...>`.
+        2. **ALWAYS** generate a standard JSON Tool Call.
+        3. **ALWAYS** fill the `request_analysis` field.
+        4. TABLES: If the user wants a list, output a Markdown Table.
+        5. GRAPHS: If the user asks for a chart, call 'get_task_statistics' first. 
            Then output the data in this EXACT JSON format inside a code block:
        ```chart
        {{
