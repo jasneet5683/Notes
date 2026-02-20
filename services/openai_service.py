@@ -15,7 +15,11 @@ from typing import List, Optional
 from services.email_service import send_email_via_brevo
 import sys
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+#client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(
+    base_url="https://api.groq.com/openai/v1",
+    api_key=os.environ.get("GROQ_API_KEY") 
+)
 
 def format_tasks_for_context(tasks: List) -> str:
     """Format tasks into a readable context string with complete information"""
@@ -236,7 +240,7 @@ def generate_ai_response(
         # --- 1. FIRST API CALL ---
         print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
-            model="gpt-4", 
+            model="llama-3.3-70b-versatile", 
             messages=messages,
             tools=tools,
             tool_choice="auto",
@@ -326,7 +330,7 @@ def generate_ai_response(
 
             # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
-                model="gpt-4",
+                model="llama-3.3-70b-versatile",
                 messages=messages
             )
             return second_response.choices[0].message.content.strip()
@@ -363,7 +367,7 @@ def summarize_tasks() -> str:
         tasks_context = format_tasks_for_context(tasks)
         
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
@@ -390,7 +394,7 @@ def simple_ai_chat(user_prompt: str) -> str:
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a helpful project assistant. user will provide data stats, you simply analyze them."},
                 {"role": "user", "content": user_prompt}
