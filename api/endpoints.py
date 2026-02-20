@@ -10,7 +10,8 @@ from models.schemas import (
 )
 from services.google_sheets_service import (
     fetch_all_tasks, add_task_to_sheet, 
-    update_task_status, search_tasks
+    update_task_status, search_tasks,
+    update_task_field
 )
 from services.openai_service import (
     generate_ai_response, 
@@ -68,18 +69,46 @@ def create_task(task: TaskInput):
 
 @router.put("/tasks/{task_name}", response_model=dict)
 def update_task(task_name: str, update: TaskUpdate):
-    """Update the status of an existing task"""
-    update.task_name = task_name
-    if not update_task_status(update):
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Task '{task_name}' not found"
-        )
+    """
+    Update a task. Handles multiple fields (status, predecessor, priority) 
+    by calling the service layer for each one found.
+    """
+    
+    updates_made = []
+    errors = []
+    # 1. Check for Status Update
+    if update.new_status:
+        result = update_task_field(task_name, "status", update.new_status)
+        if result["success"]:
+            updates_made.append(f"Status -> {update.new_status}")
+        else:
+            errors.append(result["message"])
+    # 2. Check for Predecessor Update
+    if update.new_predecessor is not None:
+        # Note: We check is not None to allow clearing it with empty string
+        result = update_task_field(task_name, "predecessor", update.new_predecessor)
+        if result["success"]:
+            updates_made.append(f"Predecessor -> {update.new_predecessor}")
+        else:
+            errors.append(result["message"])
+    # 3. Check for Priority Update (if you added this to TaskUpdate schema)
+    # if update.new_priority:
+    #     result = update_task_field(task_name, "priority", update.new_priority)
+    #     ...
+    # --- Construct Final Response ---
+    
+    if errors and not updates_made:
+        # If everything failed
+        raise HTTPException(status_code=400, detail="; ".join(errors))
+    
+    if not updates_made and not errors:
+         return {"message": "⚠️ No changes detected or provided."}
     return {
-        "message": f"✅ Task '{task_name}' updated to '{update.new_status}'",
-        "timestamp": datetime.now().isoformat(),
+        "message": f"✅ Task '{task_name}' updated: " + ", ".join(updates_made),
+        "errors": errors if errors else None,
         "status": "success"
     }
+
 
 @router.get("/tasks/search", response_model=dict)
 def search_all_tasks(query: str = Query(..., min_length=1)):
