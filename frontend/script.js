@@ -373,50 +373,83 @@ function createTaskCard(task) {
 function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
-
-    // Regex to find: ```chart ... ```
-    const chartRegex = /```chart\s*([\s\S]*?)\s*```/;
-    const match = content.match(chartRegex);
-
+    // 1. Define Variables to hold separated content
+    let chartJsonString = null;
+    let textContent = content;
+    // --- STRATEGY A: Look for Markdown Blocks (```chart OR ```json) ---
+    // This regex allows "chart" OR "json" as the language tag
+    const codeBlockRegex = /```(chart|json)\s*([\s\S]*?)\s*```/;
+    const match = content.match(codeBlockRegex);
     if (match) {
-        // --- CASE A: CHART DETECTED ---
+        chartJsonString = match[2]; // The content inside the backticks
+        textContent = content.replace(match[0], "").trim(); // Remove the code block from text
+    } 
+    // --- STRATEGY B: Look for Raw JSON (Fallback) ---
+    // If the AI forgot the backticks but sent the JSON at the end
+    else {
+        const openBrace = content.indexOf('{');
+        const closeBrace = content.lastIndexOf('}');
         
-        // 1. Render text before the chart
-        const textBefore = content.split("```chart")[0];
-        msgDiv.innerHTML = marked.parse(textBefore);
-
+        // Check if looks like a JSON object exists
+        if (openBrace !== -1 && closeBrace > openBrace) {
+            try {
+                const potentialJson = content.substring(openBrace, closeBrace + 1);
+                const parsed = JSON.parse(potentialJson);
+                // Check for unique keys to confirm it's actually our chart data
+                if (parsed.datasets || parsed.type === 'chart_data') {
+                    chartJsonString = potentialJson;
+                    textContent = content.substring(0, openBrace).trim();
+                }
+            } catch (e) {
+                // Not valid JSON, ignore and treat as plain text
+            }
+        }
+    }
+    // --- RENDER LOGIC ---
+    if (chartJsonString) {
+        // 1. Render the text part first
+        msgDiv.innerHTML = marked.parse(textContent);
         // 2. Create Chart Container
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
         chartContainer.className = "chart-wrapper"; 
+        chartContainer.style.marginTop = "15px"; // Add some spacing
         chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
         msgDiv.appendChild(chartContainer);
-        
         container.appendChild(msgDiv);
-
         // 3. Process & Draw Chart
         try {
-            let chartData = JSON.parse(match[1]);
-
-            // 🔥 MAGIC: Apply Dynamic Colors before drawing
-            chartData = smartColorize(chartData);
-
+            let chartData = JSON.parse(chartJsonString);
+            // Apply your smartColorize logic (Ensure this function exists in your code)
+            if (typeof smartColorize === 'function') {
+                chartData = smartColorize(chartData);
+            }
             const ctx = document.getElementById(canvasId).getContext('2d');
-            new Chart(ctx, chartData);
-
+            
+            // Ensure chart config is valid for Chart.js
+            // If the AI sends "type": "chart_data", Chart.js doesn't know that. Default to 'bar'.
+            const config = {
+                type: chartData.type === 'chart_data' ? 'bar' : (chartData.type || 'bar'),
+                data: chartData.data || chartData, // Handle if AI wraps data or sends it direct
+                options: chartData.options || { responsive: true }
+            };
+            new Chart(ctx, config);
         } catch (e) {
             console.error("Chart Render Error:", e);
-            msgDiv.insertAdjacentHTML('beforeend', "<p style='color:red; font-size:small'>❌ Error loading chart.</p>");
+            const errorMsg = document.createElement('div');
+            errorMsg.style.color = 'red';
+            errorMsg.innerText = "❌ Error displaying chart.";
+            msgDiv.appendChild(errorMsg);
         }
     } else {
-        // --- CASE B: STANDARD TEXT ---
+        // --- STANDARD TEXT ONLY ---
         msgDiv.innerHTML = marked.parse(content);
         container.appendChild(msgDiv);
     }
-
     // Scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
+
 
 /**
  * 🌈 SMART COLOR GENERATOR
