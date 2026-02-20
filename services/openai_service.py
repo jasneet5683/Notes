@@ -243,24 +243,26 @@ def generate_ai_response(
         ### Stats LOGIC:
         - For "how many", "stats", or "percentage", use `get_task_statistics`.
         - For specific lists of tasks, use `filter_tasks_by_date`.
-        FORMATTING RULES:
+        ####FORMATTING RULES:
         1. **NEVER** use the XML format like `<function=...>`.
         2. **ALWAYS** generate a standard JSON Tool Call.
         3. **ALWAYS** fill the `request_analysis` field.
+        #### Critical Visualization Rules
         4. TABLES: If the user wants a list, output a Markdown Table.
-        5. GRAPHS: If the user asks for a chart, call 'get_task_statistics' first. 
-           Then output the data in this EXACT JSON format inside a code block:
-       ```chart
-       {{
-         "type": "bar",
-         "data": {{
-           "labels": ["Pending", "Done", "InProgress"],
-           "datasets": [{{
-             "label": "Task Status",
-             "data": [5, 3, 2],
-           }}]
-         }}
-       }}
+        5. GRAPHS: If the user asks for a stats/chart, call 'get_task_statistics' first. Then output the data in this EXACT JSON format at the end of your response:
+       ```json
+            {{
+              "type": "chart_data",
+              "title": "Tasks by Status",
+              "labels": ["Done", "In Progress", "Pending"],
+              "datasets": [
+                {{
+                  "label": "Task Count",
+                  "data": [10, 5, 2],
+                  "backgroundColor": ["#4CAF50", "#FF9800", "#F44336"]
+                }}
+              ]
+            }}    
        ```
       """ 
         messages = [{"role": "system", "content": system_prompt}]
