@@ -5,7 +5,7 @@ load_dotenv()
 
 # Environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GROQ_API_KEY = os.gentenv("GROQ_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GOOGLE_SHEETS_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "your-default-id")
 SHEET_NAME = "Task_Manager"
