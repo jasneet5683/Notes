@@ -249,17 +249,15 @@ def generate_ai_response(
         3. **ALWAYS** fill the `request_analysis` field.
         #### Critical Visualization Rules
         - TABLES: If the user wants a list, output a Markdown Table.
-        - If the user asks for a stats/chart, call 'get_task_statistics' first. At the very end**, append the chart JSON wrapped in `<<<CHART>>>` tags
-        - Do NOT use Markdown backticks (like ```json). Just the raw tags.
-       **Example Output:**
+        - If the user asks for a stats/chart, call 'get_task_statistics' first. hen, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
             Here is your summary text...
-            <<<CHART>>>
+            ```chart
             {{
               "type": "chart_data",
               "labels": ["Done", "Pending"],
               "datasets": [{{ "data": [10, 5] }}]
             }}
-            <<<CHART>>>
+            ```
       """ 
         messages = [{"role": "system", "content": system_prompt}]
         
