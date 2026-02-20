@@ -296,59 +296,63 @@ def search_tasks(search_term: str) -> List[Dict]:
 #update task Status, end_date, assignment, predecessor
 
 def update_task_field(task_name: str, field_type: str, new_value: str, request_analysis: str = None) -> dict:
-    """
-    Updates a specific field for a task in Google Sheets.
-    Returns a DICTIONARY: {"success": bool, "message": str}
-    """
-    print(f"🤖 AI Analysis: {request_analysis}") 
+    print(f"🤖 AI Analysis: {request_analysis}")
     try:
         worksheet = get_google_sheet()
         if not worksheet:
             return {"success": False, "message": "❌ Connection Error: Could not reach Google Sheets."}
-        # 1. Map API keys to Actual Google Sheet Header Names
+        # 1. UPDATE THIS MAPPING TO MATCH YOUR EXACT SHEET HEADERS
+        # Key = What AI sends (from enum)
+        # Value = Exact Header Name in Google Sheet
         COLUMN_MAPPING = {
-            "status": "Status",
-            "priority": "Priority",
-            "assigned_to": "Assigned To", 
-            "end_date": "End Date",
-            "predecessor": "Predecessor"
+            "status": "status",           
+            "priority": "Priority",       
+            "assigned_to": "assigned_to", 
+            "end_date": "end_date",       
+            "predecessor": "predecessor"  
         }
         if field_type not in COLUMN_MAPPING:
             return {"success": False, "message": f"❌ Error: Field '{field_type}' is invalid."}
         target_header = COLUMN_MAPPING[field_type]
-        # 2. Get Headers to find Column Index Dynamically
+        # 2. Get Headers & Find Column Indices
         headers = worksheet.row_values(1)
+        
         try:
-            col_index = headers.index(target_header) + 1
-            # We don't strictly need name_col_index if we iterate rows, but good to check headers exist
-            _ = headers.index("Task Name") 
+            # Find the target column (e.g., 'status' or 'predecessor')
+            target_col_index = headers.index(target_header) + 1
+            
+            # Find the Task Name column (Your sheet uses 'Task_Name')
+            # We need this index to double-check, though mostly we use it for row lookup
+            task_name_header = "Task_Name" 
+            if task_name_header not in headers:
+                 return {"success": False, "message": f"❌ Sheet Error: Header 'Task_Name' not found. Found: {headers}"}
+            
         except ValueError:
-            return {"success": False, "message": f"❌ Sheet Error: Column '{target_header}' or 'Task Name' not found."}
-        # 3. Find the Row
+            return {"success": False, "message": f"❌ Sheet Error: Column '{target_header}' not found in {headers}"}
+        # 3. Find the Row by matching Task_Name
         all_records = worksheet.get_all_records()
-        target_task_clean = task_name.strip().lower()
+        clean_target_name = task_name.strip().lower()
         
         row_to_update = -1
-        
-        for i, record in enumerate(all_records):
-            record_name = record.get("Task Name") or record.get("Task_Name")
-            if str(record_name).strip().lower() == target_task_clean:
-                row_to_update = i + 2 
+        for idx, record in enumerate(all_records):
+            # Access the record using the exact header "Task_Name"
+            current_task_name = str(record.get("Task_Name", "")).strip().lower()
+            
+            if current_task_name == clean_target_name:
+                row_to_update = idx + 2 # +2 because sheet is 1-indexed and has header row
                 break
         
         if row_to_update == -1:
             return {"success": False, "message": f"❌ Task '{task_name}' not found."}
-        # 4. Update the Cell
-        worksheet.update_cell(row_to_update, col_index, new_value)
-        
+        # 4. Update the specific cell
+        worksheet.update_cell(row_to_update, target_col_index, new_value)
         return {
             "success": True, 
-            "message": f"✅ Successfully updated '{field_type}' to '{new_value}' for '{task_name}'."
+            "message": f"✅ Updated '{field_type}' to '{new_value}' for task '{task_name}'."
         }
     except Exception as e:
         print(f"Error updating sheet: {e}")
         return {"success": False, "message": f"❌ Technical error: {str(e)}"}
-
 
 # Filter tasks by Date
 
