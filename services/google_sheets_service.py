@@ -310,10 +310,10 @@ def update_task_field(task_name: str, field_type: str, new_value: str) -> str:
         # IMPORTANT: Check your sheet. If 'Status' is Column D (4), put 4. 
         # If 'Priority' is Column F (6), put 6. Adjust these numbers!
         COLUMN_MAPPING = {
-            "status": {"col": 4, "header": "status"},
-            "assigned_to": {"col": 5, "header": "assigned_to"},
-            "priority": {"col": 7, "header": "Priority"}, 
-            "end_date": {"col": 3, "header": "end_date"}
+            "status": {"col": 5, "header": "status"},
+            "assigned_to": {"col": 6, "header": "assigned_to"},
+            "priority": {"col": 8, "header": "Priority"}, 
+            "end_date": {"col": 4, "header": "end_date"}
         }
 
         if field_type not in COLUMN_MAPPING:
