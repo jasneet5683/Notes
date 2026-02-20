@@ -77,112 +77,127 @@ def generate_ai_response(
 
         # --- TOOL DEFINITIONS ---
         tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "update_task_field",
-                    "description": "Update a specific detail (status, priority, assigned_to, end_date) of a project task.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "task_name": {"type": "string", "description": "The exact name of the task."},
-                            "field_type": {"type": "string", "enum": ["status", "priority", "assigned_to", "end_date"]},
-                            "new_value": {"type": "string", "description": "The new value to set."}
-                        },
-                        "required": ["task_name", "field_type", "new_value"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "add_task_from_ai",
-                    "description": "Add a brand new task to the project tracker.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "task_name": {"type": "string", "description": "The name of the new task."},
-                            "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned'."},
-                            "priority": {"type": "string", "enum": ["Low", "Medium", "High"], "description": "Priority level."},
-                            "end_date": {"type": "string", "description": "Due date (YYYY-MM-DD)."},
-                            "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"], "description": "Client Name."},
-                            # --- NEW FIELD ADDED HERE ---
-                            "predecessor_name": {"type": "string", "description": "The name of the task that this new task must come AFTER (dependency)."}
-                        },
-                        "required": ["task_name"]
-                    }
-                }
-            },
-            # --- NEW TOOL FOR CONFLICT CHECKING ---
-            {
-                "type": "function",
-                "function": {
-                    "name": "check_schedule_conflicts",
-                    "description": "Check if any tasks start before their predecessors end (dependency conflicts).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {}, # No arguments needed
-                        "required": []
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "send_project_email",
-                    "description": "Send an email. Use this when the user asks to email a summary, report, or notification.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "recipient_email": {"type": "string", "description": "The email address."},
-                            "subject": {"type": "string", "description": "The subject line."},
-                            "email_body": {"type": "string", "description": "The full content."}
-                        },
-                        "required": ["subject", "email_body"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "filter_tasks_by_date",
-                    "description": "Filter and list tasks based on a specific month, year, or exact date.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "target_month": {"type": "integer"},
-                            "target_year": {"type": "integer"},
-                            "target_date": {"type": "string"}
-                        }
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_task_statistics",
-                    "description": "Get counts of tasks for graphs.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
-                            "target_month": {"type": "integer"},
-                            "target_year": {"type": "integer"}
-                        },
-                        "required": ["group_by"]
-                    }
+    {
+        "type": "function",
+        "function": {
+            "name": "update_task_field",
+            "description": "Update a specific detail of a project task.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    # --- NEW FIELD: The Summary lives here ---
+                    "request_analysis": {
+                        "type": "string", 
+                        "description": "A brief summary of WHY this update is being made based on user input."
+                    },
+                    "task_name": {"type": "string", "description": "The exact name of the task."},
+                    "field_type": {"type": "string", "enum": ["status", "priority", "assigned_to", "end_date"]},
+                    "new_value": {"type": "string", "description": "The new value to set."}
+                },
+                "required": ["request_analysis", "task_name", "field_type", "new_value"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_task_from_ai",
+            "description": "Add a brand new task to the project tracker.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    # --- NEW FIELD: The Summary lives here ---
+                    "request_analysis": {
+                        "type": "string", 
+                        "description": "A structured summary of the meeting context and action plan."
+                    },
+                    "task_name": {"type": "string", "description": "The name of the new task."},
+                    "assigned_to": {"type": "string", "description": "Who is responsible? Default to 'Unassigned'."},
+                    "priority": {"type": "string", "enum": ["Low", "Medium", "High"]},
+                    "end_date": {"type": "string", "description": "Due date (YYYY-MM-DD)."},
+                    "client": {"type": "string", "enum": ["DU UAE", "Etisalat", "Batelco"]},
+                    "predecessor_name": {"type": "string"}
+                },
+                "required": ["request_analysis", "task_name"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_schedule_conflicts",
+            "description": "Check if any tasks start before their predecessors end.",
+            "parameters": {
+                "type": "object", 
+                "properties": {}, 
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_project_email",
+            "description": "Send an email summary or report.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    # --- NEW FIELD ---
+                    "request_analysis": {
+                        "type": "string", 
+                        "description": "Summary of what is being emailed and to whom."
+                    },
+                    "recipient_email": {"type": "string"},
+                    "subject": {"type": "string"},
+                    "email_body": {"type": "string"}
+                },
+                "required": ["request_analysis", "subject", "email_body"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "filter_tasks_by_date",
+            "description": "Filter tasks by date.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target_month": {"type": "integer"},
+                    "target_year": {"type": "integer"},
+                    "target_date": {"type": "string"}
                 }
             }
-        ]
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_task_statistics",
+            "description": "Get counts of tasks for graphs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
+                    "target_month": {"type": "integer"},
+                    "target_year": {"type": "integer"}
+                },
+                "required": ["group_by"]
+            }
+        }
+    }
+]
 
         system_prompt = f"""You are an intelligent project management assistant. 
         Today's Date: {today_date}
         TASK LIST:
         {tasks_context}
 
-        ### OPERATIONAL PROTOCOL: LISTEN -> SUMMARIZE -> ACT
-        You must strictly follow this 3-step process for every user input.
-        ---
+        ### PROTOCOL: LISTEN -> ANALYZE -> ACT
+        1. Listen to the user's meeting notes or request.
+        2. Analyze the priority, context, and required actions.
+        3. EXECUTE the appropriate tool.
+
         ### PHASE 1: LISTEN & ANALYZE (Internal Logic)
         1.  **Detect Intent:** Does the user mention a meeting, a plan, or an urgent issue?
         2.  **Determine Priority:**
@@ -204,7 +219,7 @@ def generate_ai_response(
         ### PHASE 3: ACT (Tool Execution)
         **IMMEDIATELY** after the summary, generate the tool calls for `add_task`.
         **Rules for Tool Calls:**
-        1.  **Split Tasks:** If Phase 1 identified multiple dates/items, call `add_task` multiple times (Parallel Function Calling).
+        1.  **Split Tasks:** If Phase 1 identified multiple dates/items, call `add_task_from_ai` multiple times (Parallel Function Calling).
         2.  **Naming:** Use clear, short names (e.g., "Batelco Launch" instead of "They are planning to launch").
         3.  **Assignee:** Apply the assignee (e.g., Jasneet) to ALL generated tasks if implied.
         4.  **Dates:** Standardize to YYYY-MM-DD.
@@ -250,7 +265,7 @@ def generate_ai_response(
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
 
-        # --- 2. HANDLE TOOL CALLS ---
+                # --- 2. HANDLE TOOL CALLS ---
         if tool_calls:
             messages.append(response_message)
             
@@ -265,68 +280,57 @@ def generate_ai_response(
                 except Exception as json_err:
                     print(f"❌ JSON Parse Error: {json_err}", flush=True)
                     args = {}
-                
-                function_response = "Error: Unknown function." 
 
-                # EXECUTE PYTHON CODE
+                # --- NEW STEP: EXTRACT & PRINT SUMMARY ---
+                # We use .pop() to get the summary AND remove it from 'args'
+                # so it doesn't crash the actual python function later.
+                ai_analysis = args.pop("request_analysis", None)
+
+                if ai_analysis:
+                    print(f"\n📝 **AI ANALYSIS:** {ai_analysis}")
+                    print("-" * 40, flush=True)
+
+                # --- EXECUTE THE ACTUAL FUNCTION ---
+                function_response = "Error: Unknown function."
+
                 try:
-                    if function_name == "update_task_field":
-                        function_response = update_task_field(
-                            task_name=args.get("task_name"),
-                            field_type=args.get("field_type"),
-                            new_value=args.get("new_value")
-                        )
-                    
-                    elif function_name == "add_task_from_ai":
-                        # --- UPDATED ARGUMENTS HERE ---
-                        function_response = add_task_from_ai(
-                            task_name=args.get("task_name"),
-                            assigned_to=args.get("assigned_to", "Unassigned"),
-                            priority=args.get("priority", "Medium"),
-                            end_date=args.get("end_date", ""),
-                            client=args.get("client", "General"),
-                            predecessor_name=args.get("predecessor_name", "") # <--- PASSING THE NEW ARG
-                        )
+                    if function_name == "add_task_from_ai":
+                        # We pass **args because 'request_analysis' is already removed
+                        function_response = add_task_from_ai(**args)
+
+                    elif function_name == "update_task_field":
+                        function_response = update_task_field(**args)
 
                     elif function_name == "check_schedule_conflicts":
-                        # --- NEW FUNCTION CALL ---
-                        function_response = check_schedule_conflicts()
-                        
+                        function_response = check_schedule_conflicts() # No args needed
+
                     elif function_name == "send_project_email":
-                        function_response = send_email_via_brevo(
-                            subject=args.get("subject"),
-                            email_body=args.get("email_body"),
-                            recipient_email=args.get("recipient_email")
-                        )
+                        function_response = send_project_email(**args)
 
                     elif function_name == "filter_tasks_by_date":
-                        function_response = filter_tasks_by_date(
-                            target_month=args.get("target_month"),
-                            target_year=args.get("target_year"),
-                            target_date=args.get("target_date")
-                        )
+                        function_response = filter_tasks_by_date(**args)
 
                     elif function_name == "get_task_statistics":
-                        function_response = get_task_statistics(
-                            group_by=args.get("group_by"),
-                            target_month=args.get("target_month"),
-                            target_year=args.get("target_year")
-                        )
-                        
-                    else:
-                        function_response = f"Error: Function {function_name} not found."
+                        function_response = get_task_statistics(**args)
 
+                    # Convert response to string for the LLM
+                    function_response = str(function_response)
+                    
                 except Exception as e:
-                    print(f"❌ EXECUTION ERROR: {e}", flush=True)
-                    function_response = f"Error executing tool: {str(e)}"
-                
-                # APPEND RESULT
-                messages.append({
-                    "tool_call_id": tool_id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": str(function_response),
-                })
+                    error_msg = f"Error executing {function_name}: {str(e)}"
+                    print(f"❌ EXECUTION ERROR: {error_msg}", flush=True)
+                    function_response = error_msg
+
+                # --- APPEND FUNCTION RESULT TO MESSAGE HISTORY ---
+                messages.append(
+                    {
+                        "tool_call_id": tool_id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_response,
+                    }
+                )
+
 
             # --- 3. SECOND API CALL ---
             second_response = client.chat.completions.create(
