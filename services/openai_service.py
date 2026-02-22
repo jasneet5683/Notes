@@ -404,7 +404,7 @@ def summarize_tasks() -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a project management expert. Provide a concise summary with key metrics and insights."
+                    "content": "You are a senior project management expert. Provide a concise summary with key metrics, dependencies, and insights for Executive review."
                 },
                 {
                     "role": "user",
