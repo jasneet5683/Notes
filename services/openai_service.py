@@ -306,6 +306,8 @@ def generate_ai_response(
                     print(f"❌ JSON Parse Error: {json_err}", flush=True)
                     args = {}
 
+                if args is None:
+                    args = {} 
                 # --- NEW STEP: EXTRACT & PRINT SUMMARY ---
                 # We use .pop() to get the summary AND remove it from 'args'
                 # so it doesn't crash the actual python function later.
