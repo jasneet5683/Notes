@@ -5,7 +5,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 from config import GOOGLE_SHEETS_CREDENTIALS, SPREADSHEET_ID
 from models.schemas import TaskInput, TaskUpdate
 from typing import List, Dict, Optional
-from datetime import datetime
+#from datetime import datetime
+from datetime import datetime, timedelta
 from collections import Counter
 
 # Initialize Google Sheets connection
@@ -472,3 +473,66 @@ def get_task_statistics(group_by: str = "status", target_month: int = None, targ
     # This helps the AI read the data correctly.
     return json.dumps(dict(counts))
 
+
+
+def get_tasks_due_soon(all_tasks, days=15):
+    """
+    Filters a list of tasks to find those due within the next 'days'.
+    
+    Args:
+        all_tasks (list): The list of dictionaries fetched from Google Sheets.
+        days (int): The number of days to look ahead (default 15).
+        
+    Returns:
+        str: A formatted string of tasks due soon, or a "No tasks" message.
+    """
+    # 1. Get the real Server Time
+    today = datetime.now().date()
+    cutoff_date = today + timedelta(days=days)
+
+    print(f"DEBUG: Checking tasks between {today} and {cutoff_date}") # Check logs if issues persist
+
+    upcoming_tasks = []
+
+    for task in all_tasks:
+        # Get the date string from the sheet (adjust key 'End_Date' to match your sheet header exactly)
+        date_str = str(task.get("End_Date", "")).strip() 
+        task_name = task.get("Task", "Unknown Task") # Adjust key 'Task' to match your sheet
+        status = task.get("Status", "Pending")
+
+        # Skip if empty or already done
+        if not date_str or status.lower() == "completed":
+            continue
+
+        # 2. Robust Date Parsing
+        # Google Sheets can send dates in many formats. We try the most common ones.
+        task_date = None
+        date_formats = [
+            "%Y-%m-%d",  # 2024-02-25
+            "%d-%m-%Y",  # 25-02-2024
+            "%d/%m/%Y",  # 25/02/2024
+            "%m/%d/%Y",  # 02/25/2024
+            "%d-%b-%Y"   # 25-Feb-2024
+        ]
+
+        for fmt in date_formats:
+            try:
+                task_date = datetime.strptime(date_str, fmt).date()
+                break # Found a match!
+            except ValueError:
+                continue # Try the next format
+        
+        # If we couldn't parse the date, skip this row (or log an error)
+        if task_date is None:
+            continue 
+
+        # 3. The Math Comparison
+        # Check if the task is in the future AND before the cutoff
+        if today <= task_date <= cutoff_date:
+            upcoming_tasks.append(f"- {task_name} (Due: {task_date}, Status: {status})")
+
+    # 4. Final Output for the AI
+    if not upcoming_tasks:
+        return f"✅ No tasks due between {today} and {cutoff_date}."
+
+    return f"📅 Found {len(upcoming_tasks)} tasks due in the next {days} days:\n" + "\n".join(upcoming_tasks)
