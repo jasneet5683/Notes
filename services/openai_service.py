@@ -252,6 +252,10 @@ def generate_ai_response(
         3.  **Multi-Task Detection (CRITICAL):**
             -   If the user mentions multiple milestones (e.g., "Launch by X, Sign by Y"), you must identify them as **SEPARATE TASKS**.
             -   Do not bundle them into one generic task.
+        ### SPECIAL INSTRUCTIONS:
+        - **Upcoming Deadlines:** If the user asks "What is due soon?" or "Next 10 days", use the `get_tasks_due_soon` tool. Do NOT guess the dates yourself.
+        - **Specific Dates:** If the user asks for "Tasks in March", use `filter_tasks_by_date`.
+
         ---
         ### PHASE 2: SUMMARIZE (User Output)
         **BEFORE** calling any tools, you must output a structured summary to the user in this format:
