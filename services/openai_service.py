@@ -253,12 +253,11 @@ def generate_ai_response(
             -   If the user mentions multiple milestones (e.g., "Launch by X, Sign by Y"), you must identify them as **SEPARATE TASKS**.
             -   Do not bundle them into one generic task.
         ### SPECIAL INSTRUCTIONS:
-        - **Upcoming Deadlines:** If the user asks "What is due soon?" or "Next 10 days", use the `get_tasks_due_soon` tool. Do NOT guess the dates yourself.
         - **Specific Dates:** If the user asks for "Tasks in March", use `filter_tasks_by_date`.
 
         ---
         ### PHASE 2: SUMMARIZE (User Output)
-        **BEFORE** calling any tools, you must output a structured summary to the user in this format:
+        **BEFORE** calling the tools, you must output a structured summary to the user in this format:
         **📝 Project Update Summary:**
         *   **Context:** [Briefly state the context, e.g., Meeting with Batelco]
         *   **Key Updates:**
@@ -267,9 +266,9 @@ def generate_ai_response(
         *   **Action Plan:** Creating [Number] tasks with [Priority Level] priority.
         ---
         ### PHASE 3: ACT (Tool Execution)
-        **IMMEDIATELY** after the summary, generate the tool calls for `add_task`.
+        **IMMEDIATELY** after the summary, generate the tool calls for appropirate tool.
         **Rules for Tool Calls:**
-        1.  **Split Tasks:** If Phase 1 identified multiple dates/items, call `add_task_from_ai` multiple times (Parallel Function Calling).
+        1.  **Split Tasks:** If Phase 1 identified multiple dates/items for task addition, call `add_task_from_ai` multiple times (Parallel Function Calling).
         2.  **Naming:** Use clear, short names (e.g., "Batelco Launch" instead of "They are planning to launch").
         3.  **Assignee:** Apply the assignee (e.g., Jasneet) to ALL generated tasks if implied.
         4.  **Dates:** Standardize to YYYY-MM-DD.
