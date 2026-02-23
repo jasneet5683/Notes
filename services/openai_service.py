@@ -180,8 +180,8 @@ def generate_ai_response(
                                 "type": "string",
                                 "description": "Why are we filtering? (e.g., 'Checking tasks for March')."
                             },
-                            "target_month": {"type": "integer"},
-                            "target_year": {"type": "integer"},
+                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
+                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."},
                             "target_date": {"type": "string"}
                         },
                         "required": ["request_analysis"] # Make it required
