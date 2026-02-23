@@ -249,7 +249,7 @@ def generate_ai_response(
             - 'add_task_from_ai': Add a new task.
             - 'check_schedule_conflicts': Check logic.
             - 'send_project_email': Send emails.
-            - 'filter_tasks_by_date': Filter by Month/Date.
+            - 'filter_tasks_by_date': only when filetr is requested Filter by Month/Date.
             - 'get_tasks_due_soon': Get tasks due within X days.
             - 'get_task_statistics': Get counts for charts.
 
