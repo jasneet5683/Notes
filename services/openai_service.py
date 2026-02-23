@@ -202,8 +202,8 @@ def generate_ai_response(
                                 "description": "Summary of the stats request (e.g., 'Analyzing status breakdown')."
                             },
                             "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
-                            "target_month": {"type": "integer"},
-                            "target_year": {"type": "integer"}
+                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
+                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."}
                         },
                         "required": ["request_analysis", "group_by"] # Make it required
                     }
@@ -252,6 +252,7 @@ def generate_ai_response(
             - 'filter_tasks_by_date': only when filetr is requested Filter by Month/Date.
             - 'get_tasks_due_soon': Get tasks due within X days.
             - 'get_task_statistics': Get counts for charts.
+            - Answer genral questions normally
 
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
             - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
