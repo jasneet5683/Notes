@@ -9,7 +9,8 @@ from services.google_sheets_service import (
     add_task_from_ai,
     filter_tasks_by_date,
     get_task_statistics,
-    check_schedule_conflicts
+    check_schedule_conflicts,
+    get_tasks_due_soon
 )
 from typing import List, Optional
 from services.email_service import send_email_via_brevo
@@ -207,6 +208,28 @@ def generate_ai_response(
                         "required": ["request_analysis", "group_by"] # Make it required
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_tasks_due_soon",
+                    "description": "Get a list of tasks due within a specific number of days from today. Use this for questions like 'What is due next week?' or 'Upcoming deadlines'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "request_analysis": {
+                                "type": "string",
+                                "description": "Why are we checking deadlines? (e.g., 'User asked for next week's tasks')."
+                            },
+                            "days": {
+                                "type": "integer", 
+                                "description": "Number of days to look ahead (default is 15).",
+                                "default": 15
+                            }
+                        },
+                        "required": ["request_analysis"]
+                    }
+                }
             }
         ]
 
@@ -344,6 +367,12 @@ def generate_ai_response(
 
                     elif function_name == "get_task_statistics":
                         function_response = get_task_statistics(**args)
+
+                    elif function_name == "get_tasks_due_soon":
+                        # We pass the 'tasks' list we fetched at the top of the main function
+                        # We also pass the 'days' argument from the AI (defaults to 15 if missing)
+                        days_arg = args.get("days", 15)
+                        function_response = get_tasks_due_soon(tasks, days=days_arg)
 
                     # Convert response to string for the LLM
                     function_response = str(function_response)
