@@ -234,52 +234,54 @@ def generate_ai_response(
         ]
 
         system_prompt = f"""You are an intelligent project management assistant. 
-        Today's Date: {today_date}
-        TASK LIST:
-        {tasks_context}
+            Today's Date: {today_date}
+            TASK LIST:
+            {tasks_context}
 
-        1. Listen to the user's meeting notes or request.
-        2. Analyze the priority, context, and required actions.
-        3. Fill the `request_analysis` field in the tool with your plan.
-        4. EXECUTE the appropriate tool.
-         YOUR TOOLS:
-        1. 'update_task_field': Modify data.
-        2. 'add_task_from_ai' : add a new task
-        3. 'check_schedule_conflicts' : Check the schedule if there is any conflict
-        4. 'send_project_email' : Send emails
-        5. 'filter_tasks_by_date' : Filter Tasks by Date
-        6. 'get_tasks_due_soon' : Get tasks if they are due within number of days
+            ### PROTOCOL:
+            1. **LISTEN**: Identify if the user needs an action (add/update) or information (view/stats).
+            2. **ANALYZE**: Fill `request_analysis` with your plan.
+            3. **ACT**: Call the specific tool.
+            4. **REPORT**: AFTER the tool runs, you MUST summarize the result for the user.
 
-        INSTRUCTIONS:
-        - If the user says "Add task [task_name]", call the function responsible for adding a task (e.g., via 'add_task_from_ai' configured for additions).
-        - If the user says "Update task [task_name]", call the function responsible for updating a task (e.g., via 'update_task_field' configured for updates).
-        - If the user says "Send email with a CHART", call 'send_project_tool' 
-        - If the user says check "Due by" call 'get_tasks_due_soon'
-        - If the user says tasks for a particular Month or specific Date call'filter_tasks_by_date'
-        - Do NOT call the tool twice.
-        - Answer general questions normally.
-        #### Critical Visualization Rules
-        - TABLES: If the user wants a list, output a Markdown Table.
-        - If the user asks for a stats/chart, call 'get_task_statistics' first. then, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
-            FORMAT FOR CHART (For Chat Display Only):
-        ```chart
-        {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
-        ```
-        - If the user asks for a list/details, call 'get_task_statistics' first. then, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
-        FORMAT FOR TABLE (For Chat Display Only):
-        ```chart
-        {{
-            "is_table": true,
-            "title": "Task Overview",
-            "headers": ["Task Name", "Status", "Due Date"],
-            "rows": [
-                ["Fix Bug", "Done", "2023-10-01"],
-                ["Write Docs", "Pending", "2023-10-05"]
-            ],
-            "summary": "Here is the table you requested."
-        }}
-        ```
-      """ 
+            ### YOUR TOOLS:
+            - 'update_task_field': Modify data.
+            - 'add_task_from_ai': Add a new task.
+            - 'check_schedule_conflicts': Check logic.
+            - 'send_project_email': Send emails.
+            - 'filter_tasks_by_date': Filter by Month/Date.
+            - 'get_tasks_due_soon': Get tasks due within X days.
+            - 'get_task_statistics': Get counts for charts.
+
+            ### CRITICAL INSTRUCTIONS FOR RESPONSE:
+            - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
+            - If the tool returns a list of tasks, format them nicely as a Markdown list or Table.
+            - If the tool returns "No tasks found", tell the user exactly that.
+
+            ### VISUALIZATION RULES (STRICT):
+            If (and ONLY if) the user asks for a **Chart** or **Table View**:
+            1. Call the relevant tool first.
+            2. Based on the tool's output, generate the JSON below.
+            3. Place the JSON **at the very end** of your text response.
+
+            FORMAT FOR CHART:
+                ```chart
+                {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
+                ```
+            FORMAT FOR TABLE
+                ```chart
+                {{
+                    "is_table": true,
+                    "title": "Task Overview",
+                    "headers": ["Task Name", "Status", "Due Date"],
+                    "rows": [
+                        ["Fix Bug", "Done", "2023-10-01"],
+                        ["Write Docs", "Pending", "2023-10-05"]
+                            ],
+                    "summary": "Here is the table."
+                }}
+            ````
+        """
         messages = [{"role": "system", "content": system_prompt}]
         
         if conversation_history:
@@ -381,15 +383,24 @@ def generate_ai_response(
                 )
 
 
-            # --- 3. SECOND API CALL ---
+            # --- 3. SECOND API CALL (The Fix) ---
+            print("🔹 Generating final answer...", flush=True)
+            
             second_response = client.chat.completions.create(
-                #model="llama-3.3-70b-versatile",
                 model="llama-3.1-8b-instant",
-                messages=messages
+                messages=messages,
+                # remove tools=tools  <-- IMPORTANT: Don't pass tools here
+                # remove tool_choice="auto" <-- IMPORTANT: Don't pass this here
+                temperature=0.7 # Slight increase to make it conversational
             )
-            return second_response.choices[0].message.content.strip()
-        
-        return response_message.content.strip()
+            
+            final_answer = second_response.choices[0].message.content.strip()
+            
+            # Fallback if AI is still silent
+            if not final_answer:
+                return "✅ Task completed successfully. (The AI processed the data but sent a blank reply)."
+                
+            return final_answer
         
     except Exception as e:
         print(f"❌ CRITICAL ERROR: {e}", flush=True)
