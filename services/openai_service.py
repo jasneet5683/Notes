@@ -265,7 +265,7 @@ def generate_ai_response(
         ```chart
         {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
         ```
-
+        - If the user asks for a list/details, call 'get_task_statistics' first. then, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
         FORMAT FOR TABLE (For Chat Display Only):
         ```chart
         {{
