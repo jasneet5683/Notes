@@ -238,60 +238,47 @@ def generate_ai_response(
         TASK LIST:
         {tasks_context}
 
-        ### PROTOCOL: LISTEN -> ANALYZE -> ACT
         1. Listen to the user's meeting notes or request.
         2. Analyze the priority, context, and required actions.
         3. Fill the `request_analysis` field in the tool with your plan.
         4. EXECUTE the appropriate tool.
+         YOUR TOOLS:
+        1. 'update_task_field': Modify data.
+        2. 'add_task_from_ai' : add a new task
+        3. 'check_schedule_conflicts' : Check the schedule if there is any conflict
+        4. 'send_project_email' : Send emails
+        5. 'filter_tasks_by_date' : Filter Tasks by Date
+        6. 'get_tasks_due_soon' : Get tasks if they are due within number of days
 
-        ### PHASE 1: LISTEN & ANALYZE (Internal Logic)
-        1.  **Detect Intent:** Does the user mention a meeting, a plan, or an urgent issue?
-        2.  **Determine Priority:**
-            -   **LOW/MEDIUM:** "Shared info", "Planning", "Update", "Routine", "Follow up". (e.g., "Batelco shared info").
-            -   **HIGH/CRITICAL:** "Angry", "Escalation", "Urgent", "Blocker", "Deadline missed".
-        3.  **Multi-Task Detection (CRITICAL):**
-            -   If the user mentions multiple milestones (e.g., "Launch by X, Sign by Y"), you must identify them as **SEPARATE TASKS**.
-            -   Do not bundle them into one generic task.
-       
-        ---
-        ### PHASE 2: SUMMARIZE (User Output)
-        **BEFORE** calling the tools, you must output a structured summary to the user in this format:
-        **📝 Project Update Summary:**
-        *   **Context:** [Briefly state the context, e.g., Meeting with Batelco]
-        *   **Key Updates:**
-            *   [Point 1]
-            *   [Point 2]
-        *   **Action Plan:** Creating [Number] tasks with [Priority Level] priority.
-        ---
-        ### PHASE 3: ACT (Tool Execution)
-        **IMMEDIATELY** after the summary, generate the tool calls for appropirate tool.
-        **Rules for Tool Calls:**
-        1.  **Split Tasks:** If Phase 1 identified multiple dates/items for task addition, call `add_task_from_ai` multiple times (Parallel Function Calling).
-        2.  **Naming:** Use clear, short names (e.g., "Batelco Launch" instead of "They are planning to launch").
-        3.  **Assignee:** Apply the assignee (e.g., Jasneet) to ALL generated tasks if implied.
-        4.  **Dates:** Standardize to YYYY-MM-DD.
-         - **DEPENDENCIES:**
-           - If the user says "after [Task A]", set 'predecessor_name' to [Task A].
-        - **SCHEDULE CHECKS:**
-           - If asked "Is my schedule okay?", call 'check_schedule_conflicts'.
-        ### Stats LOGIC:
-        - For "how many", "stats", or "percentage", use `get_task_statistics`.
-        - For specific lists of tasks, use `filter_tasks_by_date`.
-        ####FORMATTING RULES:
-        1. **NEVER** use the XML format like `<function=...>`.
-        2. **ALWAYS** generate a standard JSON Tool Call.
-        3. **ALWAYS** fill the `request_analysis` field.
+        INSTRUCTIONS:
+        - If the user says "Add task [task_name]", call the function responsible for adding a task (e.g., via 'add_task_from_ai' configured for additions).
+        - If the user says "Update task [task_name]", call the function responsible for updating a task (e.g., via 'update_task_field' configured for updates).
+        - If the user says "Send email with a CHART", call 'send_project_tool' 
+        - If the user says check "Due by" call 'get_tasks_due_soon'
+        - If the user says tasks for a particular Month or specific Date call'filter_tasks_by_date'
+        - Do NOT call the tool twice.
+        - Answer general questions normally.
         #### Critical Visualization Rules
         - TABLES: If the user wants a list, output a Markdown Table.
-        - If the user asks for a stats/chart, call 'get_task_statistics' first. hen, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
-            Here is your summary text...
-            ```chart
-            {{
-              "type": "chart_data",
-              "labels": ["Done", "Pending"],
-              "datasets": [{{ "data": [10, 5] }}]
-            }}
-            ```
+        - If the user asks for a stats/chart, call 'get_task_statistics' first. then, STRICTLY at the end of your response, output the JSON wrapped in `chart` tags like this:
+            FORMAT FOR CHART (For Chat Display Only):
+        ```chart
+        {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
+        ```
+
+        FORMAT FOR TABLE (For Chat Display Only):
+        ```chart
+        {{
+            "is_table": true,
+            "title": "Task Overview",
+            "headers": ["Task Name", "Status", "Due Date"],
+            "rows": [
+                ["Fix Bug", "Done", "2023-10-01"],
+                ["Write Docs", "Pending", "2023-10-05"]
+            ],
+            "summary": "Here is the table you requested."
+        }}
+        ```
       """ 
         messages = [{"role": "system", "content": system_prompt}]
         
