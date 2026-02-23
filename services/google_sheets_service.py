@@ -409,21 +409,41 @@ def filter_tasks_by_date(target_month: int = None, target_year: int = None, targ
     return "Here are the matching tasks:\n" + "\n".join(filtered_results)
 
 #--- Function for Stats
-def get_task_statistics(group_by: str = "status", target_month: int = None, target_year: int = None, request_analysis: str = None) -> str:
+def get_task_statistics(
+    request_analysis: str = None, # Make sure this is accepted
+    group_by: str = "status", 
+    target_month = None,  # Removed type hint to allow strings
+    target_year = None    # Removed type hint to allow strings
+) -> str:
     """
     Calculates statistics.
     group_by options: 'status', 'priority', 'assigned_to', 'month'.
     """
+    
+    # --- FIX 1: CONVERT INPUTS TO INTEGERS ---
+    # The AI often sends "2024" (string) instead of 2024 (int).
+    # We must convert it here, otherwise the date comparison below fails.
+    try:
+        if target_month is not None and str(target_month).strip():
+            target_month = int(str(target_month).strip())
+        else:
+            target_month = None
+            
+        if target_year is not None and str(target_year).strip():
+            target_year = int(str(target_year).strip())
+        else:
+            target_year = None
+    except ValueError:
+        return json.dumps({"error": "Invalid Month or Year provided. Please use numbers."})
+    # ----------------------------------------
     tasks = fetch_all_tasks()
     
-    # ### CHANGE 2: Return valid JSON string, not a Python string
     if not tasks:
         return json.dumps({}) 
     possible_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d"]
     
     def parse_date(date_str):
         if not date_str: return None
-        # Clean the string to remove accidental quotes
         date_str = str(date_str).strip().strip("'").strip('"') 
         for fmt in possible_formats:
             try:
@@ -432,23 +452,34 @@ def get_task_statistics(group_by: str = "status", target_month: int = None, targ
                 continue
         return None
     filtered_tasks = []
+    
+    # --- FILTERING LOGIC ---
     for task in tasks:
-        raw_date = task.get("end_date", "") 
-        dt_obj = parse_date(raw_date)
-        
-        # Logic fix: Allow filtering by Year OR Month+Year
+        # If we are filtering by date, we need to check the date first
         is_date_match = True
-        if target_year:
-            if not dt_obj or dt_obj.year != target_year:
-                is_date_match = False
-        if target_month:
-            if not dt_obj or dt_obj.month != target_month:
-                is_date_match = False
-                
+        
+        # Only parse the date if we actually need to filter by it
+        if target_year or target_month or group_by == "month":
+            raw_date = task.get("end_date", "") 
+            dt_obj = parse_date(raw_date)
+            task['_dt_obj'] = dt_obj # Store for later use
+            
+            if target_year:
+                if not dt_obj or dt_obj.year != target_year:
+                    is_date_match = False
+            
+            if target_month:
+                if not dt_obj or dt_obj.month != target_month:
+                    is_date_match = False
+        else:
+            # If no date filtering is requested, we keep the task
+            task['_dt_obj'] = None
+        
         if is_date_match:
-            task['_dt_obj'] = dt_obj 
             filtered_tasks.append(task)
+    # --- COUNTING LOGIC ---
     values = []
+    
     if group_by == "month":
         for task in filtered_tasks:
             dt = task.get('_dt_obj')
@@ -459,21 +490,20 @@ def get_task_statistics(group_by: str = "status", target_month: int = None, targ
     else:
         key_map = {
             "status": "status",
-            "priority": "Priority", # Ensure this matches your Sheet header exactly
+            "priority": "priority", # normalized to lowercase key
             "assigned_to": "assigned_to"
         }
         # defaulting to "status" if key not found prevents errors
         target_key = key_map.get(group_by.lower(), "status")
+        
+        # Use .get() with case-insensitive handling if needed, 
+        # but here we assume your keys are consistent.
         values = [str(task.get(target_key, "Unknown")) for task in filtered_tasks]
+        
     counts = Counter(values)
     
-    # ### CHANGE 3: Use json.dumps()
-    # Python's str() uses single quotes {'a': 1}. 
-    # JSON requires double quotes {"a": 1}. 
-    # This helps the AI read the data correctly.
+    # Return JSON string
     return json.dumps(dict(counts))
-
-
 
 def get_tasks_due_soon(all_tasks, days=15):
     """
