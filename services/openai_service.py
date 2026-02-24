@@ -165,72 +165,8 @@ def generate_ai_response(
                 "required": ["request_analysis", "subject", "email_body"]
             }
         }
-    },
-            
-            {
-                "type": "function",
-                "function": {
-                    "name": "filter_tasks_by_date",
-                    "description": "Filter and list tasks based on a specific month, year, or exact date.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            # --- ADD THIS ---
-                            "request_analysis": {
-                                "type": "string",
-                                "description": "Why are we filtering? (e.g., 'Checking tasks for March')."
-                            },
-                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
-                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."},
-                            "target_date": {"type": "string"}
-                        },
-                        "required": ["request_analysis"] # Make it required
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_task_statistics",
-                    "description": "Get counts of tasks for graphs.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            # --- ADD THIS ---
-                            "request_analysis": {
-                                "type": "string",
-                                "description": "Summary of the stats request (e.g., 'Analyzing status breakdown')."
-                            },
-                            "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
-                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
-                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."}
-                        },
-                        "required": ["request_analysis", "group_by"] # Make it required
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_tasks_due_soon",
-                    "description": "Get a list of tasks due within a specific number of days from today. Use this for questions like 'What is due next week?' or 'Upcoming deadlines'.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "request_analysis": {
-                                "type": "string",
-                                "description": "Why are we checking deadlines? (e.g., 'User asked for next week's tasks')."
-                            },
-                            "days": {
-                                "type": "integer", 
-                                "description": "Number of days to look ahead (default is 15).",
-                                "default": 15
-                            }
-                        },
-                        "required": ["request_analysis"]
-                    }
-                }
-            }
+    }
+            #rest of the tools can be pasted here
         ]
 
         system_prompt = f"""You are an intelligent project management assistant. 
@@ -240,19 +176,16 @@ def generate_ai_response(
 
             ### PROTOCOL:
             1. **LISTEN**: Identify if the user needs an action (add/update) or information (view/stats).
-            2. **ANALYZE**: Fill `request_analysis` with your plan.
-            3. **ACT**: Call the specific tool.
-            4. **REPORT**: AFTER the tool runs, you MUST summarize the result for the user.
+            2. Understand the intent of the user
+            3. **ANALYZE**: Fill `request_analysis` with your plan.
+            4. **ACT**: Call the specific tool.
+            5. **REPORT**: AFTER the tool runs, you MUST summarize the result for the user.
 
             ### YOUR TOOLS:
             - 'update_task_field': Modify data.
             - 'add_task_from_ai': Add a new task.
-            - 'check_schedule_conflicts': Check logic.
             - 'send_project_email': Send emails.
-            - 'filter_tasks_by_date': only when filetr is requested Filter by Month/Date.
-            - 'get_tasks_due_soon': Get tasks due within X days.
-            - 'get_task_statistics': Get counts for charts.
-            - Answer genral questions normally
+            - Answer general questions normally
 
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
             - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
@@ -341,18 +274,9 @@ def generate_ai_response(
 
                     elif function_name == "send_project_email":
                         function_response = send_project_email(**args)
-
-                    elif function_name == "filter_tasks_by_date":
-                        function_response = filter_tasks_by_date(**args)
-
-                    elif function_name == "get_task_statistics":
-                        function_response = get_task_statistics(**args)
-
-                    elif function_name == "get_tasks_due_soon":
-                        # We pass the 'tasks' list we fetched at the top of the main function
-                        # We also pass the 'days' argument from the AI (defaults to 15 if missing)
-                        days_arg = args.get("days", 15)
-                        function_response = get_tasks_due_soon(tasks, days=days_arg)
+                        
+                    
+                    #Function calls here
 
                     # Convert response to string for the LLM
                     function_response = str(function_response)
