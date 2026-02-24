@@ -241,7 +241,7 @@ def generate_ai_response(
             1. Call the relevant tool first (e.g., get_task_statistics).
             2. Based on the tool's output, generate the JSON below.
             3. Place the JSON **at the very end** of your text response inside a json code block.
-            4. **IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single { }.
+           4. **IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single {{ }}.
                 FORMAT FOR CHART:
             ```json
                 {{
