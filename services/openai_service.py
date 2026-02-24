@@ -165,7 +165,49 @@ def generate_ai_response(
                 "required": ["request_analysis", "subject", "email_body"]
             }
         }
-    }
+    },
+            {
+                "type": "function",
+                "function": {
+                    "name": "filter_tasks_by_date",
+                    "description": "Filter and list tasks based on a specific month, year, or exact date.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            # --- ADD THIS ---
+                            "request_analysis": {
+                                "type": "string",
+                                "description": "Why are we filtering? (e.g., 'Checking tasks for March')."
+                            },
+                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
+                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."},
+                            "target_date": {"type": "string"}
+                        },
+                        "required": ["request_analysis"] # Make it required
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_task_statistics",
+                    "description": "Get counts of tasks for graphs.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            # --- ADD THIS ---
+                            "request_analysis": {
+                                "type": "string",
+                                "description": "Summary of the stats request (e.g., 'Analyzing status breakdown')."
+                            },
+                            "group_by": {"type": "string", "enum": ["status", "priority", "assigned_to", "month"]},
+                            "target_month": {"type": "string", "description": "The month number (e.g., '3' for March). Return as a string."},
+                            "target_year": {"type": "string", "description": "The year (e.g., '2026'). Return as a string."}
+                        },
+                        "required": ["request_analysis", "group_by"] # Make it required
+                    }
+                }
+            }
             #rest of the tools can be pasted here
         ]
 
@@ -185,6 +227,9 @@ def generate_ai_response(
             - 'update_task_field': Modify data.
             - 'add_task_from_ai': Add a new task.
             - 'send_project_email': Send emails.
+            - 'check_schedule_conflicts': Check logic.
+            - 'filter_tasks_by_date': only when filetr is requested Filter by Month/Date.
+            - 'get_task_statistics': Get counts for charts.
             - Answer general questions normally
 
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
@@ -274,7 +319,18 @@ def generate_ai_response(
 
                     elif function_name == "send_project_email":
                         function_response = send_project_email(**args)
-                        
+                    
+                    elif function_name == "filter_tasks_by_date":
+                        function_response = filter_tasks_by_date(**args)
+
+                    elif function_name == "get_task_statistics":
+                        function_response = get_task_statistics(**args)
+
+                    #elif function_name == "get_tasks_due_soon":
+                    #    # We pass the 'tasks' list we fetched at the top of the main function
+                    #    # We also pass the 'days' argument from the AI (defaults to 15 if missing)
+                    #    days_arg = args.get("days", 15)
+                    #    function_response = get_tasks_due_soon(tasks, days=days_arg)    
                     
                     #Function calls here
 
