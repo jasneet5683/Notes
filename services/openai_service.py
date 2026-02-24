@@ -234,22 +234,28 @@ def generate_ai_response(
 
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
             - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
-            - If the tool returns a list of tasks, format them nicely as a Markdown list or Table.
-            -  When the user asks for a list of tasks or data, always format the output as a Markdown table. Do not return raw JSON. Ensure the table has clear headers.
+            - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
-
             ### VISUALIZATION RULES (STRICT):
-            If (and ONLY if) the user asks for a **Chart**:
-            1. Call the relevant tool first.
+            If (and ONLY if) the user asks for a **Chart** (bar, pie, line):
+            1. Call the relevant tool first (e.g., get_task_statistics).
             2. Based on the tool's output, generate the JSON below.
-            3. Place the JSON **at the very end** of your text response.
-
-            FORMAT FOR CHART:
-                ```chart
-                {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
+            3. Place the JSON **at the very end** of your text response inside a json code block.
+            4. **IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single { }.
+                FORMAT FOR CHART:
+                ```json
+                    {
+                      "is_chart": true,
+                      "chart_type": "bar",
+                        "title": "Tasks by Status",
+                        "data": {
+                            "labels": ["Done", "Pending"],
+                            "values": [5, 2]
+                    },
+                  "summary": "Here is the chart showing task distribution."
+                    }
                 ```
-            
-        """
+            """
         messages = [{"role": "system", "content": system_prompt}]
         
         if conversation_history:
