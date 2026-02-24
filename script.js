@@ -374,133 +374,99 @@ function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
 
-    // 1. Define Variables to hold separated content
+    // 1. Define Variables
     let chartJsonString = null;
     let textContent = content;
 
-    // --- STRATEGY A: Look for Markdown Blocks (```chart OR ```json) ---
-    const codeBlockRegex = /```(chart|json)\s*([\s\S]*?)\s*```/;
+    // 2. Extract JSON
+    const codeBlockRegex = /```(json|chart)\s*([\s\S]*?)\s*```/;
     const match = content.match(codeBlockRegex);
 
     if (match) {
-        // The content inside the backticks
-        const potentialJson = match[2];
         try {
-            // Verify it is actually our chart JSON before stripping it
+            const potentialJson = match[2];
             const parsed = JSON.parse(potentialJson);
             if (parsed.is_chart || parsed.chart_type) {
                 chartJsonString = potentialJson;
                 textContent = content.replace(match[0], "").trim();
             }
-        } catch (e) {
-            // If regex matched code block but it's not valid JSON, leave as text
-        }
-    } 
-    // --- STRATEGY B: Look for Raw JSON (Fallback) ---
-    else {
+        } catch (e) {}
+    } else {
         const openBrace = content.indexOf('{');
         const closeBrace = content.lastIndexOf('}');
-        
         if (openBrace !== -1 && closeBrace > openBrace) {
             try {
                 const potentialJson = content.substring(openBrace, closeBrace + 1);
                 const parsed = JSON.parse(potentialJson);
-                // Check for unique keys to confirm it's actually our chart data
                 if (parsed.is_chart || parsed.chart_type) {
                     chartJsonString = potentialJson;
                     textContent = content.substring(0, openBrace).trim();
                 }
-            } catch (e) {
-                // Not valid JSON, ignore
-            }
+            } catch (e) {}
         }
     }
 
-    // --- RENDER LOGIC ---
+    // 3. Render Logic
     if (chartJsonString) {
-        // 1. Render the text part first
+        // A. Render Text
         msgDiv.innerHTML = marked.parse(textContent);
 
-        // 2. Create Chart Container
+        // B. Render Chart
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
-        chartContainer.className = "chart-wrapper"; 
-        chartContainer.style.marginTop = "15px"; 
-        chartContainer.style.height = "300px"; // Give it a fixed height
+        chartContainer.className = "chart-wrapper";
+        chartContainer.style.marginTop = "15px";
+        chartContainer.style.height = "300px";
         chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
         msgDiv.appendChild(chartContainer);
         container.appendChild(msgDiv);
 
-        // 3. Process & Draw Chart
         try {
             const parsedJson = JSON.parse(chartJsonString);
             
-            // --- MAPPING AI DATA TO CHART.JS ---
             const chartData = {
-                labels: parsedJson.data.labels, 
+                labels: parsedJson.data.labels,
                 datasets: [{
-                    label: parsedJson.title || "Task Data",
-                    data: parsedJson.data.values, // Map 'values' to 'data'
+                    label: parsedJson.title || "Data",
+                    data: parsedJson.data.values,
                     backgroundColor: [
-                        'rgba(54, 162, 235, 0.6)', // Blue
-                        'rgba(255, 99, 132, 0.6)', // Red
-                        'rgba(255, 206, 86, 0.6)', // Yellow
-                        'rgba(75, 192, 192, 0.6)', // Green
-                        'rgba(153, 102, 255, 0.6)' // Purple
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
+                        'rgba(54, 162, 235, 0.6)', 
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
                     ],
                     borderWidth: 1
                 }]
             };
 
             const config = {
-                type: parsedJson.chart_type || 'bar', // Use chart_type from AI
+                type: parsedJson.chart_type || 'bar',
                 data: chartData,
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true },
-                        title: {
-                            display: true,
-                            text: parsedJson.title || "Chart"
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true } // Ensure bars start at 0
-                    }
+                    scales: { y: { beginAtZero: true } }
                 }
             };
 
-            // Get Context and Render (Only declared once here)
             const ctx = document.getElementById(canvasId).getContext('2d');
             new Chart(ctx, config);
 
         } catch (e) {
-            console.error("Chart Render Error:", e);
-            const errorMsg = document.createElement('div');
-            errorMsg.style.color = 'red';
-            errorMsg.innerText = "❌ Error rendering chart data.";
-            msgDiv.appendChild(errorMsg);
+            console.error("Chart Error:", e);
         }
     } else {
-        // --- STANDARD TEXT ONLY ---
+        // Standard Text Response
         msgDiv.innerHTML = marked.parse(content);
         container.appendChild(msgDiv);
     }
 
-    // Scroll to bottom
+    // Scroll
     container.scrollTop = container.scrollHeight;
-}
-```*
-
-
+} 
+// --- END OF FUNCTION renderAIMessage ---
+// Make sure no other code (like smartColorize) is accidentally inside this function!
 
 /**
  * 🌈 SMART COLOR GENERATOR
