@@ -55,3 +55,5 @@ class ChatResponse(BaseModel):
     response: str
     timestamp: datetime
     status: str = "success"
+    class Config:
+        from_attributes = True
