@@ -418,12 +418,45 @@ function renderAIMessage(content, container) {
         msgDiv.appendChild(chartContainer);
         container.appendChild(msgDiv);
         // 3. Process & Draw Chart
-        try {
-            let chartData = JSON.parse(chartJsonString);
-            // Apply your smartColorize logic (Ensure this function exists in your code)
-            if (typeof smartColorize === 'function') {
-                chartData = smartColorize(chartData);
-            }
+       try {
+            let parsedJson = JSON.parse(chartJsonString);
+            
+            // --- FIX STARTS HERE ---
+            
+            // 1. Determine Chart Type (Map 'bar' to 'bar', etc.)
+            // The AI sends "chart_type", Chart.js wants "type"
+            const chartType = parsedJson.chart_type || 'bar';
+            // 2. Transform AI Data to Chart.js Data Structure
+            // AI sends: { labels: [], values: [] }
+            // ChartJS wants: { labels: [], datasets: [{ data: [] }] }
+            const chartConfigData = {
+                labels: parsedJson.data.labels, 
+                datasets: [{
+                    label: parsedJson.title || "Data", // Use title as dataset label
+                    data: parsedJson.data.values,      // MAP VALUES TO DATA
+                    backgroundColor: [                 // Add standard colors
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+            const config = {
+                type: chartType,
+                data: chartConfigData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: parsedJson.title // Show title at top
+                        }
+                    }
+                }
+            };
             const ctx = document.getElementById(canvasId).getContext('2d');
             
             // Ensure chart config is valid for Chart.js
