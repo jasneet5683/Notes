@@ -373,112 +373,133 @@ function createTaskCard(task) {
 function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
+
     // 1. Define Variables to hold separated content
     let chartJsonString = null;
     let textContent = content;
+
     // --- STRATEGY A: Look for Markdown Blocks (```chart OR ```json) ---
-    // This regex allows "chart" OR "json" as the language tag
     const codeBlockRegex = /```(chart|json)\s*([\s\S]*?)\s*```/;
     const match = content.match(codeBlockRegex);
+
     if (match) {
-        chartJsonString = match[2]; // The content inside the backticks
-        textContent = content.replace(match[0], "").trim(); // Remove the code block from text
+        // The content inside the backticks
+        const potentialJson = match[2];
+        try {
+            // Verify it is actually our chart JSON before stripping it
+            const parsed = JSON.parse(potentialJson);
+            if (parsed.is_chart || parsed.chart_type) {
+                chartJsonString = potentialJson;
+                textContent = content.replace(match[0], "").trim();
+            }
+        } catch (e) {
+            // If regex matched code block but it's not valid JSON, leave as text
+        }
     } 
     // --- STRATEGY B: Look for Raw JSON (Fallback) ---
-    // If the AI forgot the backticks but sent the JSON at the end
     else {
         const openBrace = content.indexOf('{');
         const closeBrace = content.lastIndexOf('}');
         
-        // Check if looks like a JSON object exists
         if (openBrace !== -1 && closeBrace > openBrace) {
             try {
                 const potentialJson = content.substring(openBrace, closeBrace + 1);
                 const parsed = JSON.parse(potentialJson);
                 // Check for unique keys to confirm it's actually our chart data
-                if (parsed.datasets || parsed.type === 'chart_data') {
+                if (parsed.is_chart || parsed.chart_type) {
                     chartJsonString = potentialJson;
                     textContent = content.substring(0, openBrace).trim();
                 }
             } catch (e) {
-                // Not valid JSON, ignore and treat as plain text
+                // Not valid JSON, ignore
             }
         }
     }
+
     // --- RENDER LOGIC ---
     if (chartJsonString) {
         // 1. Render the text part first
         msgDiv.innerHTML = marked.parse(textContent);
+
         // 2. Create Chart Container
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
         chartContainer.className = "chart-wrapper"; 
-        chartContainer.style.marginTop = "15px"; // Add some spacing
+        chartContainer.style.marginTop = "15px"; 
+        chartContainer.style.height = "300px"; // Give it a fixed height
         chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
         msgDiv.appendChild(chartContainer);
         container.appendChild(msgDiv);
+
         // 3. Process & Draw Chart
-       try {
-            let parsedJson = JSON.parse(chartJsonString);
+        try {
+            const parsedJson = JSON.parse(chartJsonString);
             
-            // --- FIX STARTS HERE ---
-            
-            // 1. Determine Chart Type (Map 'bar' to 'bar', etc.)
-            // The AI sends "chart_type", Chart.js wants "type"
-            const chartType = parsedJson.chart_type || 'bar';
-            // 2. Transform AI Data to Chart.js Data Structure
-            // AI sends: { labels: [], values: [] }
-            // ChartJS wants: { labels: [], datasets: [{ data: [] }] }
-            const chartConfigData = {
+            // --- MAPPING AI DATA TO CHART.JS ---
+            const chartData = {
                 labels: parsedJson.data.labels, 
                 datasets: [{
-                    label: parsedJson.title || "Data", // Use title as dataset label
-                    data: parsedJson.data.values,      // MAP VALUES TO DATA
-                    backgroundColor: [                 // Add standard colors
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(153, 102, 255, 0.6)'
+                    label: parsedJson.title || "Task Data",
+                    data: parsedJson.data.values, // Map 'values' to 'data'
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.6)', // Blue
+                        'rgba(255, 99, 132, 0.6)', // Red
+                        'rgba(255, 206, 86, 0.6)', // Yellow
+                        'rgba(75, 192, 192, 0.6)', // Green
+                        'rgba(153, 102, 255, 0.6)' // Purple
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
                     ],
                     borderWidth: 1
                 }]
             };
+
             const config = {
-                type: chartType,
-                data: chartConfigData,
+                type: parsedJson.chart_type || 'bar', // Use chart_type from AI
+                data: chartData,
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
+                        legend: { display: true },
                         title: {
                             display: true,
-                            text: parsedJson.title // Show title at top
+                            text: parsedJson.title || "Chart"
                         }
+                    },
+                    scales: {
+                        y: { beginAtZero: true } // Ensure bars start at 0
                     }
                 }
             };
+
+            // Get Context and Render (Only declared once here)
             const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            // Ensure chart config is valid for Chart.js
-            // If the AI sends "type": "chart_data", Chart.js doesn't know that. Default to 'bar'.
-           const ctx = document.getElementById(canvasId).getContext('2d');
             new Chart(ctx, config);
+
         } catch (e) {
             console.error("Chart Render Error:", e);
             const errorMsg = document.createElement('div');
             errorMsg.style.color = 'red';
-            errorMsg.innerText = "❌ Error displaying chart: " + e.message;
+            errorMsg.innerText = "❌ Error rendering chart data.";
             msgDiv.appendChild(errorMsg);
         }
-
     } else {
         // --- STANDARD TEXT ONLY ---
         msgDiv.innerHTML = marked.parse(content);
         container.appendChild(msgDiv);
     }
+
     // Scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
+```*
+
 
 
 /**
