@@ -461,19 +461,16 @@ function renderAIMessage(content, container) {
             
             // Ensure chart config is valid for Chart.js
             // If the AI sends "type": "chart_data", Chart.js doesn't know that. Default to 'bar'.
-            const config = {
-                type: chartData.type === 'chart_data' ? 'bar' : (chartData.type || 'bar'),
-                data: chartData.data || chartData, // Handle if AI wraps data or sends it direct
-                options: chartData.options || { responsive: true }
-            };
+           const ctx = document.getElementById(canvasId).getContext('2d');
             new Chart(ctx, config);
         } catch (e) {
             console.error("Chart Render Error:", e);
             const errorMsg = document.createElement('div');
             errorMsg.style.color = 'red';
-            errorMsg.innerText = "❌ Error displaying chart.";
+            errorMsg.innerText = "❌ Error displaying chart: " + e.message;
             msgDiv.appendChild(errorMsg);
         }
+
     } else {
         // --- STANDARD TEXT ONLY ---
         msgDiv.innerHTML = marked.parse(content);
