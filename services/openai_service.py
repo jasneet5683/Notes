@@ -243,17 +243,17 @@ def generate_ai_response(
             3. Place the JSON **at the very end** of your text response inside a json code block.
             4. **IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single { }.
                 FORMAT FOR CHART:
-                ```json
-                    {
-                      "is_chart": true,
-                      "chart_type": "bar",
-                        "title": "Tasks by Status",
-                        "data": {
-                            "labels": ["Done", "Pending"],
-                            "values": [5, 2]
-                    },
-                  "summary": "Here is the chart showing task distribution."
-                    }
+            ```json
+                {{
+                    "is_chart": true,
+                    "chart_type": "bar",
+                    "title": "Tasks by Status",
+                    "data": {{
+                        "labels": ["Done", "Pending"],
+                        "values": [5, 2]
+                    }},
+                    "summary": "Here is the chart showing task distribution."
+                }}
                 ```
             """
         messages = [{"role": "system", "content": system_prompt}]
