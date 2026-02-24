@@ -257,10 +257,11 @@ def generate_ai_response(
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
             - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
             - If the tool returns a list of tasks, format them nicely as a Markdown list or Table.
+            -  When the user asks for a list of tasks or data, always format the output as a Markdown table. Do not return raw JSON. Ensure the table has clear headers.
             - If the tool returns "No tasks found", tell the user exactly that.
 
             ### VISUALIZATION RULES (STRICT):
-            If (and ONLY if) the user asks for a **Chart** or **Table View**:
+            If (and ONLY if) the user asks for a **Chart**:
             1. Call the relevant tool first.
             2. Based on the tool's output, generate the JSON below.
             3. Place the JSON **at the very end** of your text response.
@@ -269,19 +270,7 @@ def generate_ai_response(
                 ```chart
                 {{ "is_chart": true, "chart_type": "bar", "title": "Tasks by Status", "data": {{ "labels": ["Done", "Pending"], "values": [5, 2] }}, "summary": "Here is the chart." }}
                 ```
-            FORMAT FOR TABLE
-                ```chart
-                {{
-                    "is_table": true,
-                    "title": "Task Overview",
-                    "headers": ["Task Name", "Status", "Due Date"],
-                    "rows": [
-                        ["Fix Bug", "Done", "2023-10-01"],
-                        ["Write Docs", "Pending", "2023-10-05"]
-                            ],
-                    "summary": "Here is the table."
-                }}
-            ````
+            
         """
         messages = [{"role": "system", "content": system_prompt}]
         
