@@ -358,55 +358,82 @@ def update_task_field(task_name: str, field_type: str, new_value: str, request_a
 # Filter tasks by Date
 
 def filter_tasks_by_date(target_month: int = None, target_year: int = None, target_date: str = None) -> str:
+    """
+    Filters tasks from Google Sheets based on date, month, or year.
+    Returns a formatted string containing task names, status, priority, and dependencies.
+    """
     tasks = fetch_all_tasks()
     if not tasks:
-        return "No tasks found in database."
+        return "No tasks found in the database."
+    
     filtered_results = []
     
-    # Standard formats
+    # Common date formats found in Google Sheets
     possible_formats = ["%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d"]
-    print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}")
+    
+    print(f"DEBUG: Filtering started. Target: M={target_month}, Y={target_year}, D={target_date}")
+    
     for task in tasks:
-        # 1. Get the date string using the CORRECT column key: 'end_date'
-        # We use .get('end_date') directly based on your logs
-        raw_date_str = str(task.get("end_date", "")).strip().strip("'")
-        
-        if not raw_date_str:
+        # 1. Get the date string from 'end_date'
+        raw_val = task.get("end_date", "")
+        if not raw_val or str(raw_val).lower() == "none":
             continue
+            
+        # Clean the string (remove single quotes if present)
+        raw_date_str = str(raw_val).strip().strip("'")
+        
         parsed_date = None
-        # 2. Try to parse
+        # 2. Try to parse the date string into a Python datetime object
         for fmt in possible_formats:
             try:
-                parsed_date = datetime.strptime(raw_date_str, fmt)
+                parsed_date = datetime.datetime.strptime(raw_date_str, fmt)
                 break 
-            except ValueError:
+            except (ValueError, TypeError):
                 continue 
         
         if not parsed_date:
-            print(f"DEBUG: Could not parse date: '{raw_date_str}'")
+            # Skip if date is unreadable
             continue
-        # 3. Check Match
+        # 3. Match Logic
         match = True
         
+        # Filter by specific date (YYYY-MM-DD)
         if target_date:
-            normalized_date_str = parsed_date.strftime("%Y-%m-%d")
-            if normalized_date_str != target_date:
+            if parsed_date.strftime("%Y-%m-%d") != target_date.strip():
                 match = False
         
-        if target_month and target_year:
-            if parsed_date.month != target_month or parsed_date.year != target_year:
+        # Filter by Month
+        if target_month is not None:
+            if parsed_date.month != int(target_month):
                 match = False
+                
+        # Filter by Year
+        if target_year is not None:
+            if parsed_date.year != int(target_year):
+                match = False
+                
+        # 4. If it matches, extract all relevant fields
         if match:
-            # We also update these keys to match your logs: 'Task_Name', 'status', 'Priority'
-            task_name = task.get("Task_Name", "Unknown")
-            status = task.get("status", "Unknown")
-            priority = task.get("Priority", "Unknown")
+            task_name = task.get("Task_Name", "Unknown Task")
+            status = task.get("status", "No Status")
+            priority = task.get("Priority", "No Priority")
+            # Added the Dependencies field here as you requested
+            predecessor = task.get("predecessor", "None") or "None"
             
             print(f"DEBUG: Match found! {task_name}")
-            filtered_results.append(f"- {task_name} (Due: {raw_date_str}, Status: {status}, Priority: {priority})")
+            
+            # Format as a clean string for the AI to process
+            filtered_results.append(
+                f"- Task: {task_name} | Due: {raw_date_str} | Status: {status} | Priority: {priority} | Dependencies: {predecessor}"
+            )
+    # 5. Return the final string
     if not filtered_results:
         return "No tasks found matching that date criteria."
-    return "Here are the matching tasks:\n" + "\n".join(filtered_results)
+        
+    header = "Here are the tasks found for the requested period:\n\n"
+    return header + "\n".join(filtered_results)
+
+#    return "Here are the matching tasks:\n" + "\n".join(filtered_results)
 
 #--- Function for Stats
 def get_task_statistics(
