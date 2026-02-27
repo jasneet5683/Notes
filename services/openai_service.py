@@ -371,12 +371,15 @@ def generate_ai_response(
             )
             
             final_answer = second_response.choices[0].message.content.strip()
-            
-            # Fallback if AI is still silent
-            if not final_answer:
-                return "✅ Task completed successfully. (The AI processed the data but sent a blank reply)."
-                
-            return final_answer
+            return final_answer if final_answer else "✅ Action completed."
+        # ==========================================================
+        # ✅ THE MISSING PART: Handle responses that DON'T use tools
+        # ==========================================================
+        if response_message.content:
+            return response_message.content.strip()
+        
+        return "I processed your request, but I don't have a specific text response for you."
+
         
     except Exception as e:
         print(f"❌ CRITICAL ERROR: {e}", flush=True)
