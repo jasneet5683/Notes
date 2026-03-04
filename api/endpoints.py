@@ -191,7 +191,7 @@ def ask_simple_question(request: SimpleAskRequest):
 def health_check():
     """Check if the API is running"""
     return {
-        "status": "healthy",
-        "service": "Project Status Chat Agent",
+        "status": "Online",
+        "service": "Application",
         "timestamp": datetime.now().isoformat()
     }
