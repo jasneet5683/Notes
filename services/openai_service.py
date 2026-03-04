@@ -211,7 +211,7 @@ def generate_ai_response(
             #rest of the tools can be pasted here
         ]
 
-        system_prompt = f"""You are an intelligent project management assistant. 
+        system_prompt = f"""You are a PMP certified smart project management assistant. 
             Today's Date: {today_date}
             TASK LIST:
             {tasks_context}
@@ -417,7 +417,7 @@ def summarize_tasks() -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a senior project management expert. As of  today's date {today_date}, provide a concise summary with key metrics, dependencies, and insights highlighting clients for Executive review."
+                    "content": "You are a PMP certified senior project management expert. As of  today's date {today_date}, provide a concise summary with key metrics, dependencies, and insights highlighting clients for Executive review."
                 },
                 {
                     "role": "user",
