@@ -220,7 +220,7 @@ def generate_ai_response(
             1. **LISTEN**: Identify if the user needs an action (add/update) or information (view/stats).
             2. Understand the intent of the user
             3. **ANALYZE**: Fill `request_analysis` with your plan.
-            4. **ACT**: Call the specific tool.
+            4. **ACT**: Call the specific tool, If the user wants to update or add something, you **MUST** call the relevant tool. 
             5. **REPORT**: AFTER the tool runs, you MUST summarize the result for the user.
 
             ### YOUR TOOLS:
@@ -233,7 +233,9 @@ def generate_ai_response(
             - Answer general questions normally
 
             ### CRITICAL INSTRUCTIONS FOR RESPONSE:
-            - **Do NOT be silent.** Once the tool provides data, read it and explain it to the user.
+            - **DO NOT** write the function name in your chat response (e.g., do not write 'function:update_task_field'). 
+            - If you use a tool, stay silent until the tool returns data, then explain the result to the user.
+            - When updating priority, use "High", "Medium", or "Low".
             - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
             ### VISUALIZATION RULES (STRICT):
