@@ -434,7 +434,8 @@ def summarize_tasks() -> str:
         response = client.chat.completions.create(
             # 💡 Use the 70b model for summaries if possible, it's much better at logic
             #model="llama-3.1-8b-instant",
-            model="llama-3.3-70b-versatile", 
+            model=allam-2-7b,
+            #model="llama-3.3-70b-versatile", 
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content}
