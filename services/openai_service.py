@@ -411,23 +411,36 @@ def summarize_tasks() -> str:
     try:
         tasks = fetch_all_tasks()
         tasks_context = format_tasks_for_context(tasks)
-        today_date = datetime.now().strftime("%Y-%m-%d")
         
+        # Get the actual current date and year
+        now = datetime.now()
+        today_str = now.strftime("%Y-%m-%d")
+        current_year = now.year
+        # 🔹 IMPROVED PROMPT
+        # We use f-strings for BOTH and explicitly tell it the year
+        system_content = (
+            f"You are a PMP certified senior project management expert. "
+            f"IMPORTANT: Today is {today_str}. The current year is {current_year}. "
+            f"Provide a concise executive summary with key metrics and insights."
+        )
+        user_content = (
+            f"Summarize the project status based on these tasks:\n{tasks_context}\n\n"
+            f"LOGIC RULES:\n"
+            f"1. Today's Date is {today_str}.\n"
+            f"2. A task is ONLY 'Overdue' if its end_date is BEFORE {today_str}.\n"
+            f"3. If a task is due in {current_year + 1} or {current_year + 2}, it is 'Upcoming', NOT 'Overdue'.\n"
+            f"4. Do not hallucinate dates."
+        )
         response = client.chat.completions.create(
-            #model="llama-3.3-70b-versatile",
-            model="llama-3.1-8b-instant",
+            # 💡 Use the 70b model for summaries if possible, it's much better at logic
+            #model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile", 
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a PMP certified senior project management expert. As of  today's date {today_date}, provide a concise summary with key metrics, dependencies, and insights highlighting clients for Executive review."
-                },
-                {
-                    "role": "user",
-                    "content": f"Summarize the project status based on these tasks:\n{tasks_context}. Any task is late which has end date passed as of today's date {today_date}"
-                }
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": user_content}
             ],
-            temperature=0.5,
-            max_tokens=300
+            temperature=0.1, # Lower temperature = less hallucination
+            max_tokens=500
         )
         
         return response.choices[0].message.content.strip()
