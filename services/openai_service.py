@@ -423,7 +423,7 @@ def summarize_tasks() -> str:
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize the project status based on these tasks:\n{tasks_context}"
+                    "content": f"Summarize the project status based on these tasks:\n{tasks_context}. Any task is late which has end date passed as of today's date {today_date}"
                 }
             ],
             temperature=0.5,
