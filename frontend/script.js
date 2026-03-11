@@ -908,7 +908,7 @@ async function loadVisualization(type) {
     container.removeAttribute('data-processed'); // Required for Mermaid re-render
 
     try {
-        const response = await fetch(`https://your-railway-url.railway.app/api/viz/${type}`);
+        const response = await fetch(`${API_BASE_URL}/viz/${type}`);
         const data = await response.json();
         
         // Inject the code and tell Mermaid to render it
