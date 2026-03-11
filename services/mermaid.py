@@ -7,6 +7,9 @@ from typing import List, Optional
 import sys
 
 def generate_mermaid_gantt(tasks):
+    # Neutral theme works very well for Gantt
+    config = "%%{init: {'theme': 'neutral'}}%%"
+    gantt_lines = [config, "gantt", "    title Project Schedule", ...]
     if not tasks:
         return "gantt\n    title No Data\n    section No Data\n    Empty :0, 1d"
 
@@ -37,6 +40,8 @@ def generate_mermaid_gantt(tasks):
     return "\n".join(gantt_lines)
 
 def generate_mermaid_flowchart(tasks):
+    config = "%%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#007bff'}}}%%"
+    mermaid_lines = [config, "graph TD"]
     if not tasks:
         return "graph TD\n    Empty[No tasks found]"
 
