@@ -967,5 +967,6 @@ window.downloadSummary = downloadSummary;
 window.renderStatusChart = renderStatusChart;
 window.renderResourceChart = renderResourceChart;
 window.toggleChatVoice = toggleChatVoice;
+window.loadVisualization = loadVisualization;
 document.addEventListener('DOMContentLoaded', () => {loadAllTasks()});
 
