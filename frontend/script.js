@@ -104,10 +104,13 @@ async function getSummary() {
             </div>`;
 
     } catch (error) {
-        console.error('Summary error:', error);
+       console.error('Summary error:', error);
         // Use the variable summaryDisplay here, not document.getElementById
         if (summaryDisplay) {
-            summaryDisplay.innerHTML = `<
+            summaryDisplay.innerHTML = `<div class="error">❌ Analysis Failed: ${error.message}</div>`;
+        }
+    }
+}
 
 // 📋 3. GET ALL TASKS
 async function loadAllTasks() {
