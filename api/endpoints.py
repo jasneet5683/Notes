@@ -199,12 +199,13 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
-#Mermaid APIs
+# --- Mermaid APIs ---
+
 @router.get("/viz/gantt")
 async def get_gantt():
-   try:
+    try:
         # 1. Fetch the data from your Google Sheets
-        tasks = get_all_tasks() # Ensure this function is imported/available
+        tasks = get_all_tasks() 
         
         # 2. Pass tasks to the Gantt generator
         chart_code = generate_mermaid_gantt(tasks)
