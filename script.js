@@ -902,22 +902,54 @@ function toggleChatVoice() {
 }
 
 //Mermaid functions
+// Initialize Mermaid configuration
+mermaid.initialize({ 
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'loose'
+});
+
+/**
+ * Fetches Mermaid code from the Railway API and renders it.
+ * @param {string} type - The type of visualization (e.g., 'gantt' or 'flowchart')
+ */
 async function loadVisualization(type) {
+    console.log("Fetching visualization for:", type);
+    
     const container = document.getElementById('mermaid-container');
-    container.innerHTML = "Loading visualization...";
-    container.removeAttribute('data-processed'); // Required for Mermaid re-render
+    if (!container) return;
+
+    // Show loading state
+    container.innerHTML = "🌀 Connecting to Railway server...";
+    container.removeAttribute('data-processed');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/viz/${type}`);
+        // Update this URL with your actual Railway deployment endpoint
+        const API_URL = `${API_BASE_URL}/viz/${type}`;
+        
+        const response = await fetch(API_URL);
+        
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status}`);
+        }
+
         const data = await response.json();
-        
-        // Inject the code and tell Mermaid to render it
-        container.innerHTML = data.mermaid_code;
-        mermaid.contentLoaded(); 
-        
-    } catch (error) {
-        console.error("Error loading chart:", error);
-        container.innerHTML = "Failed to load visualization.";
+
+        if (data.mermaid_code) {
+            // Inject the Mermaid syntax into the container
+            container.innerHTML = data.mermaid_code;
+            
+            // Trigger the Mermaid rendering engine
+            await mermaid.run({
+                nodes: [container],
+            });
+        } else {
+            container.innerHTML = "⚠️ No chart data found for this selection.";
+        }
+
+    } catch (err) {
+        console.error("Critical Error:", err);
+        container.innerHTML = "❌ Error: Could not load the project data. Please check the console.";
     }
 }
 
