@@ -935,7 +935,7 @@ async function loadVisualization(type) {
     if (!container) return;
 
     // Show loading state
-    container.innerHTML = "🌀 Connecting to Railway server...";
+    container.innerHTML = "🌀 Fetching data...";
     container.removeAttribute('data-processed');
 
     try {
