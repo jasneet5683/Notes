@@ -27,7 +27,9 @@ class PromptRequest(BaseModel):
 # CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (adjust for production)
+    #allow_origins=["*"],  # Allow all origins (adjust for production)
+    allow_origins=["https://jasneet5683.github.io",
+                  "http://localhost:5500"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
