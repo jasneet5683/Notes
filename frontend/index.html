@@ -8,6 +8,8 @@
     <!-- 1. NEW LIBRARIES ADDED HERE -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true });</script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -376,7 +378,15 @@
                 </form>
             </div>
         </div>
-    
+
+        <div class="controls">
+            <button onclick="loadVisualization('gantt')">📊 View Gantt Chart</button>
+            <button onclick="loadVisualization('flowchart')">🌿 View Flow Chart</button>
+        </div>
+
+<!-- This is where the chart will appear -->
+    <div id="mermaid-container" class="mermaid"></div>
+
         <!-- ADD NEW TASK -->
         <div class="section">
             <h2>➕ Create New Task</h2>
