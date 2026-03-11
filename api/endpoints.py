@@ -202,11 +202,31 @@ def health_check():
 #Mermaid APIs
 @router.get("/viz/gantt")
 async def get_gantt():
-    chart_code = generate_mermaid_gantt()
-    return {"mermaid_code": chart_code}
+   try:
+        # 1. Fetch the data from your Google Sheets
+        tasks = get_all_tasks() # Ensure this function is imported/available
+        
+        # 2. Pass tasks to the Gantt generator
+        chart_code = generate_mermaid_gantt(tasks)
+        
+        return {"mermaid_code": chart_code}
+        
+    except Exception as e:
+        print(f"Gantt Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Gantt Error: {str(e)}")
+
 
 @router.get("/viz/flowchart")
 async def get_flowchart():
-    chart_code = generate_mermaid_flowchart()
-    return {"mermaid_code": chart_code}
-
+    try:
+        # 1. Fetch the data from your Google Sheets service
+        tasks = get_all_tasks() 
+        
+        # 2. Pass that data into the flowchart generator
+        chart_code = generate_mermaid_flowchart(tasks)
+      
+        return {"mermaid_code": chart_code}
+        
+    except Exception as e:
+        print(f"Error generating flowchart: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
