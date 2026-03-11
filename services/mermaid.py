@@ -2,15 +2,7 @@ import os
 import json
 from datetime import datetime
 from openai import OpenAI
-from services.google_sheets_service import (
-    fetch_all_tasks, 
-    update_task_field, 
-    add_task_from_ai,
-    filter_tasks_by_date,
-    get_task_statistics,
-    check_schedule_conflicts,
-    get_tasks_due_soon
-)
+from services.google_sheets_service import fetch_all_tasks
 from typing import List, Optional
 import sys
 
@@ -41,25 +33,33 @@ def generate_mermaid_gantt() -> str:
 
     return "\n".join(mermaid_str)
 
-def generate_mermaid_flowchart() -> str:
-    """Converts tasks and predecessors into a Mermaid Flowchart string"""
-    tasks = fetch_all_tasks()
+def generate_mermaid_flowchart(tasks):
+    # 1. Start the Mermaid string
+    mermaid_lines = ["graph TD"]
     
-    mermaid_str = ["graph TD"]
-    
+    # 2. Create a lookup dictionary for ID -> Task Name
+    # We cast to string to avoid the 'int' object error we saw earlier
+    task_map = {str(task.get("id")): task.get("task_name", "Unnamed Task") for task in tasks}
+
     for task in tasks:
-        name = task.get("Task_Name", "Task").replace(" ", "_")
-        val = task.get("predecessor", "")
-        # Convert to string if it's not already, and default to empty string if None
-        predecessor = str(val if val is not None else "").replace(" ", "_")
-
-        #predecessor = task.get("predecessor", "").replace(" ", "_")
+        current_id = str(task.get("id"))
+        current_name = task.get("task_name", "Unnamed Task")
         
-        # If there is a dependency, draw an arrow
-        if predecessor and predecessor.lower() != "none":
-            mermaid_str.append(f"    {predecessor} --> {name}")
-        else:
-            # Just define the node if no predecessor
-            mermaid_str.append(f"    {name}")
+        # 3. Define the current node with a label: ID["Name"]
+        # This ensures the box shows the text, not the number
+        mermaid_lines.append(f'    {current_id}["{current_name}"]')
 
-    return "\n".join(mermaid_str)
+        # 4. Handle Predecessors
+        predecessor_raw = task.get("predecessor")
+        
+        if predecessor_raw:
+            # Split if there are multiple predecessors (e.g., "1, 2")
+            preds = str(predecessor_raw).split(',')
+            
+            for p in preds:
+                p_id = p.strip()
+                # Only draw the line if the predecessor actually exists in our data
+                if p_id in task_map:
+                    mermaid_lines.append(f'    {p_id} --> {current_id}')
+
+    return "\n".join(mermaid_lines)
