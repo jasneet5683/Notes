@@ -27,18 +27,25 @@ async function checkHealth() {
 
 // 📊 2. GET PROJECT SUMMARY
 async function getSummary() {
+    // 🔍 1. Identify the container
+    const summaryDisplay = document.getElementById('summaryDisplay');
+    
+    // 🔍 2. GUARD: If the element is not on this page (like tasks.html), exit now!
+    if (!summaryDisplay) {
+        console.log("Summary display not found. Skipping AI analysis.");
+        return; 
+    }
+
     try {
-        const summaryDisplay = document.getElementById('summaryDisplay');
-        
-        // 1. Check local data
+        // 🔍 3. Check if we actually have data to analyze
         if (!allTasksData || allTasksData.length === 0) {
-            summaryDisplay.innerHTML = '<div class="error">⚠️ No tasks found. Please Refresh Data.</div>';
+            summaryDisplay.innerHTML = '<div class="loading">⏳ Waiting for task data to arrive...</div>';
             return;
         }
 
-        summaryDisplay.innerHTML = '<div class="loading">📊 Analyzing priorities, deadlines & workload...</div>';
+        summaryDisplay.innerHTML = '<div class="loading">📊 AI is analyzing priorities, deadlines & workload...</div>';
 
-        // 2. Calculate Hard Facts (To prevent counting errors)
+        // 4. Calculate Hard Facts (Logic stays the same)
         const total = allTasksData.length;
         const pending = allTasksData.filter(t => (t.status||'').toLowerCase().includes('pending')).length;
         const progress = allTasksData.filter(t => (t.status||'').toLowerCase().includes('progress')).length;
@@ -46,8 +53,7 @@ async function getSummary() {
         const hold = allTasksData.filter(t => (t.status||'').toLowerCase().includes('hold')).length;
         const cancelled = allTasksData.filter(t => (t.status||'').toLowerCase().includes('cancelled')).length;
 
-        // 3. Prepare FULL Data for AI
-        // We map the raw data to a cleaner object to save tokens but keep all info
+        // 5. Prepare data for AI
         const detailedTasks = allTasksData.map(t => ({
             task: t.Task_Name,
             status: t.status,
@@ -58,32 +64,16 @@ async function getSummary() {
             client: t.Client || "General"
         }));
 
-        // 4. Construct the Prompt
         const prompt = `
             I need a professional Project Status Report.
-            
-            HARD DATA SUMMARY (Use these numbers as absolute truth):
-            - Total Tasks: ${total}
-            - Pending: ${pending} 
-            - In Progress: ${progress}
-            - Completed: ${completed}
-            - On Hold: ${hold}
-            - Cancelled: ${cancelled}
-            - Today's Date: ${new Date().toLocaleDateString()}
-
+            HARD DATA SUMMARY:
+            - Total Tasks: ${total} | Pending: ${pending} | In Progress: ${progress} | Completed: ${completed}
             DETAILED TASK LIST (JSON):
             ${JSON.stringify(detailedTasks)}
-
-            INSTRUCTIONS:
-            Based on the data above, write a concise summary (max 150 words) covering:
-            1. 🚩 **Blockers & Risks**: Are there high-priority tasks pending? Any overdue dates?
-            2. 👥 **Workload**: Who is assigned the most work?
-            3. 📈 **Progress**: General health of the project.
-            
-            Use bullet points and bold text for key insights.
+            INSTRUCTIONS: Write a concise summary (max 150 words) covering Blockers, Workload, and Progress.
         `;
 
-        // 5. Send to Backend
+        // 6. Send to Backend
         const response = await fetch(`${API_BASE_URL}/ask`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -93,21 +83,17 @@ async function getSummary() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        const aiText = data.answer || data.response;
+        const aiText = data.answer || data.response || "No summary generated.";
 
-        // 6. Render Output
-        // Use 'marked.parse(aiText)' if you have the marked.js library, otherwise just use aiText
-        // We wrap it in a nice container with the hard stats visible at top
+        // 7. Render Output Safely
         summaryDisplay.innerHTML = 
             `<div class="summary-box">
                 <h3>🧠 Smart Project Analysis</h3>
                 <div class="stats-bar" style="display:flex; gap:15px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee; font-size:0.9rem;">
                     <span><b>Total:</b> ${total}</span>
                     <span style="color:#e67e22"><b>Pending:</b> ${pending}</span>
-                    <span style="color:#17a2b8"><b>In Progress:</b> ${progress}</span>
+                    <span style="color:#17a2b8"><b>Progress:</b> ${progress}</span>
                     <span style="color:#28a745"><b>Done:</b> ${completed}</span>
-                    <span style="color:#818589"><b>On Hold:</b> ${hold}</span>
-                    <span style="color:#dc143c"><b>Cancelled:</b> ${cancelled}</span>
                 </div>
                 <div class="ai-content" style="line-height: 1.6;">
                     ${typeof marked !== 'undefined' ? marked.parse(aiText) : aiText.replace(/\n/g, '<br>')}
@@ -119,10 +105,9 @@ async function getSummary() {
 
     } catch (error) {
         console.error('Summary error:', error);
-        document.getElementById('summaryDisplay').innerHTML = 
-            `<div class="error">❌ Analysis Failed: ${error.message}</div>`;
-    }
-}
+        // Use the variable summaryDisplay here, not document.getElementById
+        if (summaryDisplay) {
+            summaryDisplay.innerHTML = `<
 
 // 📋 3. GET ALL TASKS
 async function loadAllTasks() {
