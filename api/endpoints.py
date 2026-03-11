@@ -18,7 +18,10 @@ from services.openai_service import (
     summarize_tasks,
     simple_ai_chat
 )
-
+from services.mermaid import (
+    generate_mermaid_gantt,
+    generate_mermaid_flowchart
+)
 # ✅ DATA MODELS
 
 class ChatMessage(BaseModel):
@@ -195,3 +198,15 @@ def health_check():
         "service": "Application",
         "timestamp": datetime.now().isoformat()
     }
+
+#Mermaid APIs
+@router.get("/viz/gantt")
+async def get_gantt():
+    chart_code = generate_mermaid_gantt()
+    return {"mermaid_code": chart_code}
+
+@router.get("/viz/flowchart")
+async def get_flowchart():
+    chart_code = generate_mermaid_flowchart()
+    return {"mermaid_code": chart_code}
+
