@@ -901,6 +901,26 @@ function toggleChatVoice() {
     }
 }
 
+//Mermaid functions
+async function loadVisualization(type) {
+    const container = document.getElementById('mermaid-container');
+    container.innerHTML = "Loading visualization...";
+    container.removeAttribute('data-processed'); // Required for Mermaid re-render
+
+    try {
+        const response = await fetch(`https://your-railway-url.railway.app/api/viz/${type}`);
+        const data = await response.json();
+        
+        // Inject the code and tell Mermaid to render it
+        container.innerHTML = data.mermaid_code;
+        mermaid.contentLoaded(); 
+        
+    } catch (error) {
+        console.error("Error loading chart:", error);
+        container.innerHTML = "Failed to load visualization.";
+    }
+}
+
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
