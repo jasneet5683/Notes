@@ -49,7 +49,11 @@ def generate_mermaid_flowchart() -> str:
     
     for task in tasks:
         name = task.get("Task_Name", "Task").replace(" ", "_")
-        predecessor = task.get("predecessor", "").replace(" ", "_")
+        val = task.get("predecessor", "")
+        # Convert to string if it's not already, and default to empty string if None
+        predecessor = str(val if val is not None else "").replace(" ", "_")
+
+        #predecessor = task.get("predecessor", "").replace(" ", "_")
         
         # If there is a dependency, draw an arrow
         if predecessor and predecessor.lower() != "none":
