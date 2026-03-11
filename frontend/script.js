@@ -126,34 +126,54 @@ async function getSummary() {
 
 // 📋 3. GET ALL TASKS
 async function loadAllTasks() {
+    // 🔍 1. Identify the task list element
+    const taskListElement = document.getElementById('taskList');
+    
     try {
-        document.getElementById('taskList').innerHTML = '<div class="loading">🔄 Loading all tasks...</div>';
+        // 🔍 2. Only show "Loading" text if the element actually exists (Tasks Page)
+        if (taskListElement) {
+            taskListElement.innerHTML = '<div class="loading">🔄 Loading all tasks...</div>';
+        }
         
         const response = await fetch(`${API_BASE_URL}/tasks`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        allTasksData = data.tasks || []; 
+        // Make sure allTasksData is updated globally so charts can use it
+        window.allTasksData = data.tasks || []; 
         console.log('Loaded tasks:', data);
         
-        if (data.tasks && data.tasks.length > 0) {
-            document.getElementById('taskList').innerHTML = `
-                <div style="margin-bottom: 15px; color: #666;">
-                    📊 Total Tasks: <strong>${data.count}</strong> | Last Updated: ${new Date(data.timestamp).toLocaleString()}
-                </div>
-                ${data.tasks.map(task => createTaskCard(task)).join('')}
-            `;
-            // ✅ NEW: Trigger AI Summary automatically now that data is ready
-            console.log("Data loaded. Triggering AI Summary...");
-            renderResourceChart(); // <--- 1. Load Resource Chart
-            renderStatusChart();   // <--- 2. Load Status Chart
-            //getSummary();          // <--- 3. Load AI Summary
-        } else {
-            document.getElementById('taskList').innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
+        // 🔍 3. If we are on the Tasks Page, render the list
+        if (taskListElement) {
+            if (data.tasks && data.tasks.length > 0) {
+                taskListElement.innerHTML = `
+                    <div style="margin-bottom: 15px; color: #666;">
+                        📊 Total Tasks: <strong>${data.count}</strong> | Last Updated: ${new Date(data.timestamp).toLocaleString()}
+                    </div>
+                    ${data.tasks.map(task => createTaskCard(task)).join('')}
+                `;
+            } else {
+                taskListElement.innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
+            }
         }
+
+        // 🔍 4. If we are on the Dashboard Page, update the charts
+        // We check if the chart canvases exist before rendering
+        if (document.getElementById('resourceChart')) {
+            console.log("Updating Resource Chart...");
+            renderResourceChart(); 
+        }
+        if (document.getElementById('statusChart')) {
+            console.log("Updating Status Chart...");
+            renderStatusChart();
+        }
+
     } catch (error) {
         console.error('Load tasks error:', error);
-        document.getElementById('taskList').innerHTML = '<div class="error">❌ Failed to load tasks. Check API connection.</div>';
+        // Only show error message if the element exists
+        if (taskListElement) {
+            taskListElement.innerHTML = '<div class="error">❌ Failed to load tasks. Check API connection.</div>';
+        }
     }
 }
 
@@ -978,5 +998,22 @@ window.renderStatusChart = renderStatusChart;
 window.renderResourceChart = renderResourceChart;
 window.toggleChatVoice = toggleChatVoice;
 window.loadVisualization = loadVisualization;
-document.addEventListener('DOMContentLoaded', () => {loadAllTasks()});
+//document.addEventListener('DOMContentLoaded', () => {loadAllTasks()});
+// --- 🚀 PAGE INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Page loaded. Initializing systems...");
+
+    // 1. Always check API Health (Exists on both pages)
+    if (typeof checkAPIHealth === 'function') {
+        checkAPIHealth();
+    }
+
+    // 2. Load Data (This fetches tasks and then updates UI/Charts safely)
+    loadAllTasks();
+
+    // 3. Initialize Mermaid (Only if we are on the Dashboard/Index)
+    if (window.mermaid && document.getElementById('mermaid-container')) {
+        mermaid.initialize({ startOnLoad: true });
+    }
+});
 
