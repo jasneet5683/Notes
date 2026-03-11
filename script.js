@@ -157,50 +157,60 @@ async function loadAllTasks() {
     }
 }
 
-// 🆕 4. CREATE TASK (POST)
-document.getElementById('taskForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const taskData = {
-        task_name: document.getElementById('taskName').value.trim(),
-        assigned_to: document.getElementById('assignedTo').value.trim(),
-        client: document.getElementById('client').value.trim() || 'Not specified',
-        start_date: document.getElementById('startDate').value || null,
-        end_date: document.getElementById('endDate').value || null,
-        status: document.getElementById('status').value,
-        priority: String(document.getElementById('priority').value || "1"),
-        notify_email: document.getElementById('notifyEmail').value.trim() || null,
-        predecessor: document.getElementById('predecessor').value 
-    };
-    
-    try {
-        const submitButton = e.target.querySelector('button');
-        submitButton.textContent = '⏳ Creating...';
-        submitButton.disabled = true;
+// --- 🆕 4. CREATE TASK (POST) ---
+// We check if 'taskForm' exists before adding the listener
+const taskFormElement = document.getElementById('taskForm');
+
+if (taskFormElement) {
+    taskFormElement.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        const response = await fetch(`${API_BASE_URL}/tasks`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(taskData)
-        });
+        const taskData = {
+            task_name: document.getElementById('taskName').value.trim(),
+            assigned_to: document.getElementById('assignedTo').value.trim(),
+            client: document.getElementById('client').value.trim() || 'Not specified',
+            start_date: document.getElementById('startDate').value || null,
+            end_date: document.getElementById('endDate').value || null,
+            status: document.getElementById('status').value,
+            priority: String(document.getElementById('priority').value || "1"),
+            notify_email: document.getElementById('notifyEmail').value.trim() || null,
+            predecessor: document.getElementById('predecessor').value 
+        };
         
-        const result = await response.json();
-        if (response.ok) {
-            showNotification(result.message, 'success');
-            document.getElementById('taskForm').reset();
-            loadAllTasks(); // Refresh the task list
-        } else {
-            throw new Error(result.detail || 'Failed to create task');
+        try {
+            const submitButton = e.target.querySelector('button');
+            submitButton.textContent = '⏳ Creating...';
+            submitButton.disabled = true;
+            
+            const response = await fetch(`${API_BASE_URL}/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                // Use a standard alert or your showNotification function
+                alert(result.message || 'Task Created Successfully! ✨');
+                taskFormElement.reset();
+                
+                // Only try to refresh the list if we are on the page that has it
+                if (document.getElementById('taskList')) {
+                    loadAllTasks(); 
+                }
+            } else {
+                throw new Error(result.detail || 'Failed to create task');
+            }
+        } catch (error) {
+            console.error('Create task error:', error);
+            alert('❌ Failed to create task: ' + error.message);
+        } finally {
+            const submitButton = e.target.querySelector('button');
+            submitButton.textContent = '🚀 Create Task';
+            submitButton.disabled = false;
         }
-    } catch (error) {
-        console.error('Create task error:', error);
-        showNotification('❌ Failed to create task: ' + error.message, 'error');
-    } finally {
-        const submitButton = e.target.querySelector('button');
-        submitButton.textContent = '🚀 Create Task';
-        submitButton.disabled = false;
-    }
-});
+    });
+}
 
 // ✏️ 5. UPDATE TASK STATUS (PUT)
 async function updateTaskStatus(taskName, newStatus) {
