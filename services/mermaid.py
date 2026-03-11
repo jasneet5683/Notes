@@ -6,32 +6,40 @@ from services.google_sheets_service import fetch_all_tasks
 from typing import List, Optional
 import sys
 
-def generate_mermaid_gantt() -> str:
-    """Converts tasks into a Mermaid Gantt chart string"""
-    tasks = fetch_all_tasks()  # Your existing function
-    
-    # Header for Mermaid Gantt
-    mermaid_str = [
+def generate_mermaid_gantt(tasks):
+    # 1. Start the Gantt chart header
+    # dateFormat should match how your dates are stored in Google Sheets (usually YYYY-MM-DD)
+    gantt_lines = [
         "gantt",
-        "    title Project Timeline",
+        "    title Project Schedule",
         "    dateFormat  YYYY-MM-DD",
         "    axisFormat  %m-%d",
         "    section Project Tasks"
     ]
 
     for task in tasks:
-        name = task.get("Task_Name", "Unnamed Task")
-        start = task.get("start_date", "2024-01-01") # Ensure you have start_date
-        end = task.get("end_date", "2024-01-10")
-        priority = task.get("priority", "Medium")
+        # Create a unique tag for this task (e.g., t1, t2)
+        task_id = f"t{task.get('id')}"
+        name = task.get("task_name", "Unnamed Task")
         
-        # Mapping priority to Mermaid tags (crit for High)
-        tag = "crit, " if priority == "High" else ""
+        # Ensure dates are strings. Provide a fallback if empty.
+        start_date = str(task.get("start_date", "")).strip()
+        end_date = str(task.get("end_date", "")).strip()
         
-        # Format: Task Name :tag, start_date, end_date
-        mermaid_str.append(f"    {name} :{tag}{start}, {end}")
+        # Get predecessor and format it as a tag (e.g., "1" becomes "t1")
+        predecessor = str(task.get("predecessor", "")).strip()
+        
+        if predecessor and predecessor != "None" and predecessor != "":
+            # Logic: Task Name : tag, after predecessor_tag, end_date
+            pred_tag = f"t{predecessor}"
+            line = f'    {name} : {task_id}, after {pred_tag}, {end_date}'
+        else:
+            # Logic: Task Name : tag, start_date, end_date
+            line = f'    {name} : {task_id}, {start_date}, {end_date}'
+        
+        gantt_lines.append(line)
 
-    return "\n".join(mermaid_str)
+    return "\n".join(gantt_lines)
 
 def generate_mermaid_flowchart(tasks):
     # 1. Start the Mermaid string
