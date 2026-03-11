@@ -9,7 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script>mermaid.initialize({ startOnLoad: true });</script>
+    <script>
+    // Initialize Mermaid immediately
+    mermaid.initialize({ 
+        startOnLoad: false,
+        theme: 'forest' 
+    });
+    </script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
