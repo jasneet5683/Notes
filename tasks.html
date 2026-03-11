@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management - Manage Tasks</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- BACK NAVIGATION -->
+        <div style="margin-bottom: 20px;">
+            <a href="index.html" style="text-decoration: none; font-weight: bold; color: #6f42c1;">← Back to Dashboard</a>
+        </div>
+
+        <div class="header">
+            <h1>📋 Task Operations</h1>
+            <p>Create, Search, and Export your project tasks</p>
+            <div id="healthStatus" class="health-indicator">🔄 Checking API status...</div>
+        </div>
+       
+        <!-- ADD NEW TASK -->
+        <div class="section">
+            <h2>➕ Create New Task</h2>
+            <form id="taskForm">
+                <div class="grid">
+                    <input id="taskName" placeholder="Task Name *" required>
+                    <input id="assignedTo" placeholder="Assigned To *" required>
+                </div>
+                <div class="grid">
+                    <select id="client">
+                        <option value="Etisalat">Etisalat</option>
+                        <option value="DU">DU</option>
+                        <option value="Batelco">Batelco</option>
+                        <option value="Not specified">Other</option>
+                    </select> 
+                    <input id="notifyEmail" type="email" placeholder="Notification Email">
+                </div>
+                <div class="grid">
+                    <input type="date" id="startDate" title="Start Date">
+                    <input type="date" id="endDate" title="End Date">
+                </div>
+                
+                <select id="status">
+                    <option value="Pending">📋 Pending</option>
+                    <option value="In Progress">⚡ In Progress</option>
+                    <option value="Completed">✅ Completed</option>
+                </select>
+                
+                <select id="priority">
+                    <option value="Blocker">Blocker</option>
+                    <option value="Critical" selected>Critical</option>
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium Priority</option>
+                    <option value="Low">Low Priority</option>
+                    <option value="Info">Info</option>
+                </select>
+                <div class="form-group">
+                    <label>Predecessor Task (Optional)</label>
+                    <input type="text" id="predecessor" placeholder="e.g., Task ID">
+                </div>
+                <button type="submit" class="btn-submit">🚀 Create Task</button>
+            </form>
+        </div>
+
+        <!-- SEARCH TASKS -->
+        <div class="section">
+            <h2>🔍 Search Tasks</h2>
+            <div class="grid">
+                <input id="searchInput" placeholder="Search by task name or assigned person..." 
+                       onkeypress="if(event.key==='Enter') searchTasks()">
+                <button onclick="searchTasks()" class="btn-submit">🔍 Search Tasks</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <!-- ALL TASKS LIST -->
+        <div class="section">
+            <h2>📋 All Tasks</h2>
+            <div class="button-row">
+                <button onclick="loadAllTasks()" class="btn-refresh">🔄 Refresh Tasks</button>
+                <button onclick="clearTasksList()" class="btn-clear">🗑️ Clear Display</button>
+                <button onclick="downloadTasksCSV()" class="btn-csv">📊 Export Tasks to CSV</button>
+            </div>
+            <div id="taskList" class="loading">Loading tasks...</div>
+        </div>
+    </div>
+        
+    <script type="module" src="script.js"></script>
+</body>
+</html>
