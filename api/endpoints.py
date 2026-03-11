@@ -205,8 +205,8 @@ def health_check():
 async def get_gantt():
     try:
         # 1. Fetch the data from your Google Sheets
-        tasks = get_all_tasks() 
-        
+        tasks = fetch_all_tasks() 
+        print(f"DEBUG: tasks is a {type(tasks)} | Content: {tasks[:1] if tasks else 'Empty'}")
         # 2. Pass tasks to the Gantt generator
         chart_code = generate_mermaid_gantt(tasks)
         
@@ -221,8 +221,8 @@ async def get_gantt():
 async def get_flowchart():
     try:
         # 1. Fetch the data from your Google Sheets service
-        tasks = get_all_tasks() 
-        
+        tasks = fetch_all_tasks() 
+        print(f"DEBUG: tasks is a {type(tasks)} | Content: {tasks[:1] if tasks else 'Empty'}")
         # 2. Pass that data into the flowchart generator
         chart_code = generate_mermaid_flowchart(tasks)
       
