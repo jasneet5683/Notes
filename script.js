@@ -126,54 +126,38 @@ async function getSummary() {
 
 // 📋 3. GET ALL TASKS
 async function loadAllTasks() {
-    // 🔍 1. Identify the task list element
     const taskListElement = document.getElementById('taskList');
     
     try {
-        // 🔍 2. Only show "Loading" text if the element actually exists (Tasks Page)
         if (taskListElement) {
-            taskListElement.innerHTML = '<div class="loading">🔄 Loading all tasks...</div>';
+            taskListElement.innerHTML = '<div class="loading">🔄 Loading tasks...</div>';
         }
         
         const response = await fetch(`${API_BASE_URL}/tasks`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        // Make sure allTasksData is updated globally so charts can use it
-        window.allTasksData = data.tasks || []; 
-        console.log('Loaded tasks:', data);
         
-        // 🔍 3. If we are on the Tasks Page, render the list
+        // ✅ CRITICAL: Save to the global variable so charts can see it
+        allTasksData = data.tasks || []; 
+        console.log('Data synced to allTasksData:', allTasksData);
+        
+        // Render List (if on Tasks page)
         if (taskListElement) {
-            if (data.tasks && data.tasks.length > 0) {
-                taskListElement.innerHTML = `
-                    <div style="margin-bottom: 15px; color: #666;">
-                        📊 Total Tasks: <strong>${data.count}</strong> | Last Updated: ${new Date(data.timestamp).toLocaleString()}
-                    </div>
-                    ${data.tasks.map(task => createTaskCard(task)).join('')}
-                `;
+            if (allTasksData.length > 0) {
+                taskListElement.innerHTML = allTasksData.map(task => createTaskCard(task)).join('');
             } else {
-                taskListElement.innerHTML = '<div class="loading">📝 No tasks found. Create your first task above!</div>';
+                taskListElement.innerHTML = '<div class="loading">No tasks found.</div>';
             }
         }
 
-        // 🔍 4. If we are on the Dashboard Page, update the charts
-        // We check if the chart canvases exist before rendering
-        if (document.getElementById('resourceChart')) {
-            console.log("Updating Resource Chart...");
-            renderResourceChart(); 
-        }
-        if (document.getElementById('statusChart')) {
-            console.log("Updating Status Chart...");
-            renderStatusChart();
-        }
+        // ✅ AUTO-REFRESH CHARTS (if on Dashboard)
+        // This replaces the manual "Refresh Data" button requirement
+        if (document.getElementById('statusChart')) renderStatusChart();
+        if (document.getElementById('resourceChart')) renderResourceChart();
 
     } catch (error) {
         console.error('Load tasks error:', error);
-        // Only show error message if the element exists
-        if (taskListElement) {
-            taskListElement.innerHTML = '<div class="error">❌ Failed to load tasks. Check API connection.</div>';
-        }
     }
 }
 
@@ -732,10 +716,17 @@ let myChart = null; // Variable to store chart instance
 
 function renderStatusChart() {
     // 1. Check if we have data
-    if (typeof allTasksData === 'undefined' || !allTasksData || allTasksData.length === 0) {
-        alert("⚠️ No data found! Please click 'Refresh Data' first.");
+    //if (typeof allTasksData === 'undefined' || !allTasksData || allTasksData.length === 0) {
+    //    alert("⚠️ No data found! Please click 'Refresh Data' first.");
+     //   return;
+    const chartCanvas = document.getElementById('statusChart');
+    if (!chartCanvas) return; 
+    // ✅ Change the alert to a silent check
+    if (!allTasksData || allTasksData.length === 0) {
+        console.log("Waiting for data to load before rendering Status Chart...");
         return;
     }
+    
 
     // 2. Count the statuses
     // --- FIX: We must declare ALL variables here first ---
@@ -803,11 +794,17 @@ function renderStatusChart() {
 let resourceChartInstance = null;
 
 function renderResourceChart() {
+  //  if (!allTasksData || allTasksData.length === 0) {
+  //      alert("No data available. Please refresh.");
+   //     return;
+  //  }
+ const chartCanvas = document.getElementById('resourceChart');
+    if (!chartCanvas) return;
+    // ✅ Change the alert to a silent check
     if (!allTasksData || allTasksData.length === 0) {
-        alert("No data available. Please refresh.");
+        console.log("Waiting for data to load before rendering Resource Chart...");
         return;
     }
-
     const ctx = document.getElementById('resourceChart');
     
     // 1. Process Data
