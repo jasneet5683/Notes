@@ -3,71 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Management</title>
+    <title>Task Management - Dashboard</title>
     
-    <!-- 1. NEW LIBRARIES ADDED HERE -->
+    <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-   <!--- Style -->
-   <link rel="stylesheet" href="style.css">
- 
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📝 Task Management System</h1>
-            <p>Complete Project Management with AI Assistant</p>
+            <h1>📝 Task Management Dashboard</h1>
+            <p>Project Analytics & AI Assistant</p>
             <div id="healthStatus" class="health-indicator">🔄 Checking API status...</div>
         </div>
 
- <!-- 1. BUTTON ROW -->
-<div class="button-row">
-    <!-- Replaced 'Check API Health' with 'Resource Utilization' trigger -->
-    <button onclick="renderResourceChart()" class="btn-health" style="background-color: #6f42c1;">📉 Resource Utilization</button>
-    <button onclick="renderStatusChart()" class="btn-csv">📊 Show Status Chart</button>
-    <button onclick="getSummary()" class="btn-summary">✨ AI Summary</button>
-    <button onclick="loadAllTasks()" class="btn-refresh">🔄 Refresh Data</button>
-    <button onclick="downloadSummary()" class="btn-download">📥 Save Report</button>
-</div>
-
-<!-- 2. DASHBOARD SPLIT LAYOUT -->
-<div class="dashboard-split">
-    
-    <!-- === LEFT SIDE: AI SUMMARY === -->
-    <div id="summaryContainer" class="split-box left-panel">
-        <h3>📝 AI Project Report</h3>
-        <div id="summaryDisplay">
-            <div class="empty-state">
-                <p>Click "Get AI Summary" to generate a report here...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- === RIGHT SIDE WRAPPER (Stacks 2 Charts) === -->
-    <div class="right-panel-wrapper">
-        
-        <!-- Top Right: Status Chart (Pie) -->
-        <div class="split-box chart-box">
-            <h3>🍰 Project Status</h3>
-            <div class="chart-container">
-                <canvas id="statusChart"></canvas>
-            </div>
+        <!-- NAVIGATION & MAIN BUTTONS -->
+        <div class="button-row">
+            <button onclick="renderResourceChart()" class="btn-health" style="background-color: #6f42c1;">📉 Resource Utilization</button>
+            <button onclick="renderStatusChart()" class="btn-csv">📊 Show Status Chart</button>
+            <button onclick="getSummary()" class="btn-summary">✨ AI Summary</button>
+            <a href="tasks.html" class="btn-refresh" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">📋 Go to Tasks</a>
         </div>
 
-        <!-- Bottom Right: Resource Chart (Bar) -->
-        <div class="split-box chart-box">
-            <h3>📉 Resource Utilization (By Client)</h3>
-            <div class="chart-container">
-                <canvas id="resourceChart"></canvas>
+        <!-- DASHBOARD SPLIT LAYOUT -->
+        <div class="dashboard-split">
+            <!-- AI SUMMARY -->
+            <div id="summaryContainer" class="split-box left-panel">
+                <h3>📝 AI Project Report</h3>
+                <div id="summaryDisplay">
+                    <div class="empty-state">
+                        <p>Click "Get AI Summary" to generate a report here...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS SECTION -->
+            <div class="right-panel-wrapper">
+                <div class="split-box chart-box">
+                    <h3>🍰 Project Status</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="split-box chart-box">
+                    <h3>📉 Resource Utilization (By Client)</h3>
+                    <div class="chart-container">
+                        <canvas id="resourceChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
-    </div>
-</div>
-
-        
-        <!-- AI CHAT ASSISTANT  ✨ AI Summary -->
+        <!-- AI CHAT ASSISTANT -->
         <div class="section">
             <h2>🤖 AI Project Assistant</h2>
             <div class="chat-container">
@@ -75,94 +64,22 @@
                     <div class="message bot">👋 Hi! Ask me to "List tasks in a table" or "Show me a pie chart of status".</div>
                 </div>
                 <form id="chatForm" onsubmit="sendChat(event)" style="display: flex; gap: 10px; align-items: center;">
-                        <!-- Input grows to fill space -->
-                        <input id="chatInput" placeholder="Ask about tasks, get insights, or request help..." required style="margin: 0; flex-grow: 1;">
-    
-                        <!-- MIC BUTTON: Added type="button" so it doesn't submit the form -->
-                        <button type="button" onclick="toggleChatVoice()" id="btn-mic" class="icon-btn" title="Voice Command" style="width: auto; padding: 10px 15px; background: #e2e8f0; color: #333;">
-                        🎙️
-                        </button>
-                        <!-- SUBMIT BUTTON -->
-                        <button type="submit" class="btn-submit" style="width: auto;">📤 Send </button>
+                    <input id="chatInput" placeholder="Ask about tasks..." required style="margin: 0; flex-grow: 1;">
+                    <button type="button" onclick="toggleChatVoice()" id="btn-mic" class="icon-btn" title="Voice Command" style="width: auto; padding: 10px 15px; background: #e2e8f0;">🎙️</button>
+                    <button type="submit" class="btn-submit" style="width: auto;">📤 Send</button>
                 </form>
             </div>
         </div>
 
-        <div class="controls">
-            <button onclick="loadVisualization('gantt')">📊 View Gantt Chart</button>
-            <button onclick="loadVisualization('flowchart')">🌿 View Flow Chart</button>
-        </div>
-
-<!-- Visualization Container -->
-    <div id="mermaid-container" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; min-height: 400px;">
-        <p>Select a visualization to begin...</p>
-    </div>
-       
-        <!-- ADD NEW TASK -->
+        <!-- VISUALIZATIONS -->
         <div class="section">
-            <h2>➕ Create New Task</h2>
-            <form id="taskForm">
-                <div class="grid">
-                    <input id="taskName" placeholder="Task Name *" required>
-                    <input id="assignedTo" placeholder="Assigned To *" required>
-                </div>
-                <div class="grid">
-                    <select id="client">
-                        <option value="Etisalat">Etisalat</option>
-                        <option value="DU">DU</option>
-                        <option value="Batelco">Batelco</option>
-                        <option value="Not specified">Other</option>
-                    </select> 
-                    <input id="notifyEmail" type="email" placeholder="Notification Email">
-                </div>
-                <div class="grid">
-                    <input type="date" id="startDate" title="Start Date">
-                    <input type="date" id="endDate" title="End Date">
-                </div>
-                
-                <select id="status">
-                    <option value="Pending">📋 Pending</option>
-                    <option value="In Progress">⚡ In Progress</option>
-                    <option value="Completed">✅ Completed</option>
-                </select>
-                
-                <select id="priority">
-                    <option value="Blocker">Blocker</option>
-                    <option value="Critical" selected>Critical</option>
-                    <option value="High">High Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="Low">Low Priority</option>
-                    <option value="Info">Info</option>
-                </select>
-                <div class="form-group">
-                    <label>Predecessor Task (Optional)</label>
-                    <input type="text" id="predecessor" placeholder="e.g., predecessor for task name or ID">
-                </div>
-                <button type="submit" class="btn-submit">🚀 Create Task</button>
-            </form>
-        </div>
-
-        <!-- SEARCH TASKS -->
-        <div class="section">
-            <h2>🔍 Search Tasks</h2>
-            <div class="grid">
-                <input id="searchInput" placeholder="Search by task name or assigned person..." 
-                       onkeypress="if(event.key==='Enter') searchTasks()">
-                <button onclick="searchTasks()" class="btn-submit">🔍 Search Tasks</button>
+            <div class="controls">
+                <button onclick="loadVisualization('gantt')">📊 View Gantt Chart</button>
+                <button onclick="loadVisualization('flowchart')">🌿 View Flow Chart</button>
             </div>
-            <div id="searchResults" class="search-results"></div>
-        </div>
-
-        <!-- ALL TASKS -->
-        <div class="section">
-            <h2>📋 All Tasks</h2>
-            <!-- Updated to button-row for single line alignment -->
-            <div class="button-row">
-                <button onclick="loadAllTasks()" class="btn-refresh">🔄 Refresh Tasks</button>
-                <button onclick="clearTasksList()" class="btn-clear">🗑️ Clear Display</button>
-                <button onclick="downloadTasksCSV()" class="btn-csv">📊 Export Tasks to CSV</button>
+            <div id="mermaid-container" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; min-height: 400px;">
+                <p>Select a visualization to begin...</p>
             </div>
-            <div id="taskList" class="loading">Loading tasks...</div>
         </div>
     </div>
         
