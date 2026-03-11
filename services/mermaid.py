@@ -42,32 +42,43 @@ def generate_mermaid_gantt(tasks):
     return "\n".join(gantt_lines)
 
 def generate_mermaid_flowchart(tasks):
-    # 1. Start the Mermaid string
+    # Safety: If tasks is None or not a list, show an error node
+    if not isinstance(tasks, list):
+        return "graph TD\n    Error[Data format error: Expected list]"
+
     mermaid_lines = ["graph TD"]
     
-    # 2. Create a lookup dictionary for ID -> Task Name
-    # We cast to string to avoid the 'int' object error we saw earlier
-    task_map = {str(task.get("id")): task.get("task_name", "Unnamed Task") for task in tasks}
-
+    # 1. Create a safe ID -> Name mapping
+    task_map = {}
     for task in tasks:
-        current_id = str(task.get("id"))
+        # Check if 'task' is actually a dictionary
+        if isinstance(task, dict):
+            t_id = str(task.get("id", ""))
+            t_name = task.get("task_name", "Unnamed Task")
+            if t_id:
+                task_map[t_id] = t_name
+
+    # 2. Build the chart lines
+    for task in tasks:
+        # Skip anything that isn't a dictionary
+        if not isinstance(task, dict):
+            continue
+            
+        current_id = str(task.get("id", ""))
         current_name = task.get("task_name", "Unnamed Task")
         
-        # 3. Define the current node with a label: ID["Name"]
-        # This ensures the box shows the text, not the number
+        if not current_id:
+            continue
+
+        # Define node
         mermaid_lines.append(f'    {current_id}["{current_name}"]')
 
-        # 4. Handle Predecessors
-        predecessor_raw = task.get("predecessor")
-        
-        if predecessor_raw:
-            # Split if there are multiple predecessors (e.g., "1, 2")
-            preds = str(predecessor_raw).split(',')
-            
-            for p in preds:
-                p_id = p.strip()
-                # Only draw the line if the predecessor actually exists in our data
-                if p_id in task_map:
-                    mermaid_lines.append(f'    {p_id} --> {current_id}')
+        # Handle Predecessor
+        predecessor = str(task.get("predecessor", "")).strip()
+        if predecessor and predecessor in task_map:
+            mermaid_lines.append(f'    {predecessor} --> {current_id}')
+
+    return "\n".join(mermaid_lines)
+
 
     return "\n".join(mermaid_lines)
