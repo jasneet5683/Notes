@@ -9,14 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <script>
-    // Initialize Mermaid immediately
-    mermaid.initialize({ 
-        startOnLoad: false,
-        theme: 'forest' 
-    });
-    </script>
-
+   
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -390,9 +383,11 @@
             <button onclick="loadVisualization('flowchart')">🌿 View Flow Chart</button>
         </div>
 
-<!-- This is where the chart will appear -->
-    <div id="mermaid-container" class="mermaid"></div>
-
+<!-- Visualization Container -->
+    <div id="mermaid-container" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; min-height: 400px;">
+        <p>Select a visualization to begin...</p>
+    </div>
+       
         <!-- ADD NEW TASK -->
         <div class="section">
             <h2>➕ Create New Task</h2>
