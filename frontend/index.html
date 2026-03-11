@@ -301,6 +301,26 @@
         .loading { text-align: center; color: #666; padding: 20px; }
         .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
         .success { color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; }
+
+    /* This targets the container where the mermaid code is injected */
+#mermaid-container {
+    background-color: #ffffff; /* Pure white background */
+    padding: 25px;             /* Space around the chart */
+    border-radius: 12px;       /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    border: 1px solid #e0e0e0; /* Light border to define the box */
+    margin: 20px auto;         /* Center it and add space around it */
+    overflow: auto;            /* Allow scrolling if the chart is huge */
+    display: inline-block;     /* Shrink wrap to the chart size */
+    min-width: 80%;           /* Ensure it's not too tiny */
+}
+
+/* Ensure the SVG inside scales nicely */
+#mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+}
+
     </style>
 </head>
 <body>
