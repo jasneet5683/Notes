@@ -993,22 +993,60 @@ async function loadVisualization(type) {
     }
 }
 
-// --- 📊 ROBUST GANTT CHART ---
-window.generateGantt = async function() {
+// --- 📊 Mermaid ---
+// --- 🌿 FLOWCHART (Multiple Arrows) ---
+window.generateFlowchart = async function() {
     const container = document.getElementById('mermaid-container');
     try {
         const selectedClient = document.getElementById('client-selector').value;
-        
         let filteredTasks = (selectedClient === "All") 
             ? allTasksData 
             : allTasksData.filter(t => String(t.Client) === selectedClient);
 
-        if (!filteredTasks || filteredTasks.length === 0) {
-            container.innerHTML = "No tasks found.";
-            return;
-        }
+        // Map of IDs in current view for quick lookup
+        const validIds = new Set(filteredTasks.map(t => String(t.task_id)));
+        let chartSyntax = `graph LR\n`;
 
-        // Create a Set of IDs present in this view to avoid linking to missing tasks
+        filteredTasks.forEach(t => {
+            const id = `T${t.task_id}`;
+            const name = (t.Task_Name || "Task").replace(/[$$$$"']/g, "");
+            const status = (t.status || "Pending").toUpperCase();
+
+            // 1. Define the Node
+            chartSyntax += `    ${id}["${name}<br/>(${status})"]\n`;
+
+            // 2. ⚡ MULTIPLE PREDECESSORS LOGIC
+            if (t.predecessor) {
+                // Split by comma, trim spaces, and filter to ensure the ID exists in the view
+                const preds = String(t.predecessor).split(',').map(p => p.trim());
+                preds.forEach(pId => {
+                    if (validIds.has(pId)) {
+                        chartSyntax += `    T${pId} --> ${id}\n`;
+                    }
+                });
+            }
+
+            // 3. Styling
+            if (status.includes('COMPLETE')) chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
+            else if (status.includes('PROGRESS')) chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
+        });
+
+        renderMermaid(chartSyntax);
+    } catch (err) {
+        console.error("Flowchart Error:", err);
+        container.innerHTML = `<p style="color:red;">Error rendering flowchart links.</p>`;
+    }
+};
+
+// --- 📊 GANTT CHART (Multiple Dependencies) ---
+window.generateGantt = async function() {
+    const container = document.getElementById('mermaid-container');
+    try {
+        const selectedClient = document.getElementById('client-selector').value;
+        let filteredTasks = (selectedClient === "All") 
+            ? allTasksData 
+            : allTasksData.filter(t => String(t.Client) === selectedClient);
+
         const validIds = new Set(filteredTasks.map(t => String(t.task_id)));
 
         let chartSyntax = `gantt
@@ -1019,14 +1057,20 @@ window.generateGantt = async function() {
 
         filteredTasks.forEach(t => {
             const id = `ID${t.task_id}`;
-            // Sanitize name: remove quotes/brackets that break Mermaid
             const name = (t.Task_Name || "Task").replace(/[$$$$"']/g, "");
             const start = t.start_date || "2024-01-01";
             const end = t.end_date || "2024-01-07";
             
-            // Only link if predecessor exists in the CURRENT filtered list
-            const hasValidPred = t.predecessor && validIds.has(String(t.predecessor));
-            const timing = hasValidPred ? `after ID${t.predecessor}` : start;
+            // ⚡ GANTT DEPENDENCY LOGIC
+            // Mermaid Gantt typically uses 'after ID' for its flow.
+            // If multiple exist, we link to the LAST one listed to ensure it waits for all.
+            let timing = start;
+            if (t.predecessor) {
+                const preds = String(t.predecessor).split(',').map(p => p.trim()).filter(p => validIds.has(p));
+                if (preds.length > 0) {
+                    timing = `after ID${preds[preds.length - 1]}`; 
+                }
+            }
             
             let statusTag = "";
             const s = String(t.status || "").toLowerCase();
@@ -1039,42 +1083,7 @@ window.generateGantt = async function() {
         renderMermaid(chartSyntax);
     } catch (err) {
         console.error("Gantt Error:", err);
-        container.innerHTML = `<p style="color:red;">Chart Error: Please check data format.</p>`;
-    }
-};
-
-// --- 🌿 ROBUST FLOWCHART ---
-window.generateFlowchart = async function() {
-    const container = document.getElementById('mermaid-container');
-    try {
-        const selectedClient = document.getElementById('client-selector').value;
-        let filteredTasks = (selectedClient === "All") 
-            ? allTasksData 
-            : allTasksData.filter(t => String(t.Client) === selectedClient);
-
-        const validIds = new Set(filteredTasks.map(t => String(t.task_id)));
-        let chartSyntax = `graph LR\n`;
-
-        filteredTasks.forEach(t => {
-            const id = `T${t.task_id}`;
-            const name = (t.Task_Name || "Task").replace(/[$$$$"']/g, "");
-            const status = (t.status || "Pending").toUpperCase();
-
-            chartSyntax += `    ${id}["${name}<br/>(${status})"]\n`;
-
-            // Link only if predecessor exists in the CURRENT view
-            if (t.predecessor && validIds.has(String(t.predecessor))) {
-                chartSyntax += `    T${t.predecessor} --> ${id}\n`;
-            }
-
-            if (status.includes('COMPLETE')) chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
-            else if (status.includes('PROGRESS')) chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
-        });
-
-        renderMermaid(chartSyntax);
-    } catch (err) {
-        console.error("Flowchart Error:", err);
-        container.innerHTML = `<p style="color:red;">Flowchart Error: Linkage conflict.</p>`;
+        container.innerHTML = `<p style="color:red;">Error rendering timeline dependencies.</p>`;
     }
 };
 
