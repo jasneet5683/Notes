@@ -993,78 +993,89 @@ async function loadVisualization(type) {
     }
 }
 
-//Function for Mermaid Gantt Charts
-window.generateGantt = function() {
-    const selectedClient = document.getElementById('client-selector').value;
+// --- 📊 ROBUST GANTT CHART ---
+window.generateGantt = async function() {
     const container = document.getElementById('mermaid-container');
-    // Use your global data
-    let filteredTasks = (selectedClient === "All") 
-        ? allTasksData 
-        : allTasksData.filter(t => t.Client === selectedClient);
-
-    if (!filteredTasks || filteredTasks.length === 0) {
-        container.innerHTML = "No tasks found.";
-        return;
-    }
-
-    let chartSyntax = `gantt
-    title Timeline: ${selectedClient}
-    dateFormat YYYY-MM-DD
-    axisFormat %m/%d
-    section Project Tasks\n`;
-
-    filteredTasks.forEach(t => {
-        const id = `ID${t.task_id}`;
-        const name = t.Task_Name || "Unnamed Task";
-        const start = t.start_date || "";
-        const end = t.end_date || "";
-        const pred = t.predecessor ? `after ID${t.predecessor}` : start;
+    try {
+        const selectedClient = document.getElementById('client-selector').value;
         
-        let statusTag = "";
-        if (t.status?.toLowerCase().includes('complete')) statusTag = "done,";
-        else if (t.status?.toLowerCase().includes('progress')) statusTag = "active,";
+        let filteredTasks = (selectedClient === "All") 
+            ? allTasksData 
+            : allTasksData.filter(t => String(t.Client) === selectedClient);
 
-        // Syntax: Task Name :status, id, start/after, end
-        chartSyntax += `    ${name} :${statusTag} ${id}, ${pred}, ${end}\n`;
-    });
+        if (!filteredTasks || filteredTasks.length === 0) {
+            container.innerHTML = "No tasks found.";
+            return;
+        }
 
-    renderMermaid(chartSyntax);
+        // Create a Set of IDs present in this view to avoid linking to missing tasks
+        const validIds = new Set(filteredTasks.map(t => String(t.task_id)));
+
+        let chartSyntax = `gantt
+        title Timeline: ${selectedClient}
+        dateFormat YYYY-MM-DD
+        axisFormat %m/%d
+        section Tasks\n`;
+
+        filteredTasks.forEach(t => {
+            const id = `ID${t.task_id}`;
+            // Sanitize name: remove quotes/brackets that break Mermaid
+            const name = (t.Task_Name || "Task").replace(/[$$$$"']/g, "");
+            const start = t.start_date || "2024-01-01";
+            const end = t.end_date || "2024-01-07";
+            
+            // Only link if predecessor exists in the CURRENT filtered list
+            const hasValidPred = t.predecessor && validIds.has(String(t.predecessor));
+            const timing = hasValidPred ? `after ID${t.predecessor}` : start;
+            
+            let statusTag = "";
+            const s = String(t.status || "").toLowerCase();
+            if (s.includes('complete')) statusTag = "done,";
+            else if (s.includes('progress')) statusTag = "active,";
+
+            chartSyntax += `    ${name} :${statusTag} ${id}, ${timing}, ${end}\n`;
+        });
+
+        renderMermaid(chartSyntax);
+    } catch (err) {
+        console.error("Gantt Error:", err);
+        container.innerHTML = `<p style="color:red;">Chart Error: Please check data format.</p>`;
+    }
 };
 
-//function for mermaid flowchart
-window.generateFlowchart = function() {
-    const selectedClient = document.getElementById('client-selector').value;
+// --- 🌿 ROBUST FLOWCHART ---
+window.generateFlowchart = async function() {
     const container = document.getElementById('mermaid-container');
-    
-    let filteredTasks = (selectedClient === "All") 
-        ? allTasksData 
-        : allTasksData.filter(t => t.Client === selectedClient);
+    try {
+        const selectedClient = document.getElementById('client-selector').value;
+        let filteredTasks = (selectedClient === "All") 
+            ? allTasksData 
+            : allTasksData.filter(t => String(t.Client) === selectedClient);
 
-    // graph LR = Left to Right (better for long names)
-    let chartSyntax = `graph LR\n`;
+        const validIds = new Set(filteredTasks.map(t => String(t.task_id)));
+        let chartSyntax = `graph LR\n`;
 
-    filteredTasks.forEach(t => {
-        const id = `T${t.task_id}`;
-        const name = t.Task_Name || "Task";
-        const status = (t.status || "Pending").toUpperCase();
+        filteredTasks.forEach(t => {
+            const id = `T${t.task_id}`;
+            const name = (t.Task_Name || "Task").replace(/[$$$$"']/g, "");
+            const status = (t.status || "Pending").toUpperCase();
 
-        // Define the Node
-        chartSyntax += `    ${id}["${name}<br/>(${status})"]\n`;
+            chartSyntax += `    ${id}["${name}<br/>(${status})"]\n`;
 
-        // Create the link if a predecessor exists
-        if (t.predecessor) {
-            chartSyntax += `    T${t.predecessor} --> ${id}\n`;
-        }
+            // Link only if predecessor exists in the CURRENT view
+            if (t.predecessor && validIds.has(String(t.predecessor))) {
+                chartSyntax += `    T${t.predecessor} --> ${id}\n`;
+            }
 
-        // Color coding based on your status header
-        if (status.includes('COMPLETE')) {
-            chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
-        } else if (status.includes('PROGRESS')) {
-            chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
-        }
-    });
+            if (status.includes('COMPLETE')) chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
+            else if (status.includes('PROGRESS')) chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
+        });
 
-    renderMermaid(chartSyntax);
+        renderMermaid(chartSyntax);
+    } catch (err) {
+        console.error("Flowchart Error:", err);
+        container.innerHTML = `<p style="color:red;">Flowchart Error: Linkage conflict.</p>`;
+    }
 };
 
 // Global render function
