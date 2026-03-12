@@ -382,11 +382,26 @@ function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
 
-    // 1. Define Variables
+    // --- NEW: MERMAID LOGIC (Added without touching original code) ---
+    const mermaidRegex = /```mermaid\s*([\s\S]*?)\s*```/;
+    const mermaidMatch = content.match(mermaidRegex);
+    if (mermaidMatch) {
+        const mermaidSyntax = mermaidMatch[1].trim();
+        // Remove the mermaid block so it doesn't show as raw text
+        content = content.replace(mermaidMatch[0], "").trim();
+        
+        // Call your existing global function to update the dashboard
+        if (typeof renderMermaid === "function") {
+            renderMermaid(mermaidSyntax);
+            console.log("📊 Mermaid diagram sent to main container.");
+        }
+    }
+
+    // --- START OF YOUR ORIGINAL LOGIC (Unchanged) ---
     let chartJsonString = null;
     let textContent = content;
 
-    // 2. Extract JSON
+    // 1. Extract JSON (Your Original Regex)
     const codeBlockRegex = /```(json|chart)\s*([\s\S]*?)\s*```/;
     const match = content.match(codeBlockRegex);
 
@@ -400,6 +415,7 @@ function renderAIMessage(content, container) {
             }
         } catch (e) {}
     } else {
+        // Your Original Fallback for JSON without triple backticks
         const openBrace = content.indexOf('{');
         const closeBrace = content.lastIndexOf('}');
         if (openBrace !== -1 && closeBrace > openBrace) {
@@ -414,12 +430,10 @@ function renderAIMessage(content, container) {
         }
     }
 
-    // 3. Render Logic
+    // 2. Render Logic (Your Original Chart.js Setup)
     if (chartJsonString) {
-        // A. Render Text
         msgDiv.innerHTML = marked.parse(textContent);
 
-        // B. Render Chart
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
         chartContainer.className = "chart-wrapper";
@@ -432,6 +446,7 @@ function renderAIMessage(content, container) {
         try {
             const parsedJson = JSON.parse(chartJsonString);
             
+            // Your exact original Chart.js configuration
             const chartData = {
                 labels: parsedJson.data.labels,
                 datasets: [{
@@ -469,10 +484,11 @@ function renderAIMessage(content, container) {
         msgDiv.innerHTML = marked.parse(content);
         container.appendChild(msgDiv);
     }
+    // --- END OF YOUR ORIGINAL LOGIC ---
 
-    // Scroll
     container.scrollTop = container.scrollHeight;
-} 
+}
+
 // --- END OF FUNCTION renderAIMessage ---
 // Make sure no other code (like smartColorize) is accidentally inside this function!
 
