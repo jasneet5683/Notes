@@ -389,7 +389,10 @@ function renderAIMessage(content, container) {
         const mermaidSyntax = mermaidMatch[1].trim();
         // Remove the mermaid block so it doesn't show as raw text
         content = content.replace(mermaidMatch[0], "").trim();
-        
+        // ⚡ FIX: If there is no text left after removing the code, add a status message
+        if (content === "") {
+            content = "I've updated the **Project Visualization** section with the requested diagram! 📊✨";
+        }
         // Call your existing global function to update the dashboard
         if (typeof renderMermaid === "function") {
             renderMermaid(mermaidSyntax);
