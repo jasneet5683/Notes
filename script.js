@@ -916,6 +916,25 @@ function toggleChatVoice() {
     }
 }
 
+//dropdown for Mermaid charts
+function populateClientDropdown(tasks) {
+    const selector = document.getElementById('client-selector');
+    if (!selector) return;
+
+    // Use .Client with capital 'C' to match your Google Sheet
+    const clients = [...new Set(tasks.map(t => t.Client))].filter(Boolean);
+    
+    // Reset and add 'All' option
+    selector.innerHTML = '<option value="All">🌐 All Clients</option>';
+    
+    clients.sort().forEach(client => {
+        const option = document.createElement('option');
+        option.value = client;
+        option.text = `🏢 ${client}`;
+        selector.appendChild(option);
+    });
+}
+
 //Mermaid functions
 // Initialize Mermaid configuration
 if (typeof mermaid !== 'undefined') {
@@ -969,6 +988,94 @@ async function loadVisualization(type) {
         console.error("Critical Error:", err);
         container.innerHTML = "❌ Error: Could not load the project data. Please check the console.";
     }
+}
+//Function for Mermaid Gantt Charts
+async function generateGantt() {
+    const selectedClient = document.getElementById('client-selector').value;
+    const container = document.getElementById('mermaid-container');
+    
+    // Filter tasks by Client (Capital C)
+    let filteredTasks = allTasks; // Your global data array
+    if (selectedClient !== "All") {
+        filteredTasks = allTasks.filter(t => t.Client === selectedClient);
+    }
+
+    if (filteredTasks.length === 0) {
+        container.innerHTML = "<div class='error'>No data found for this client.</div>";
+        return;
+    }
+
+    // Build Mermaid Gantt Syntax
+    let chartSyntax = `gantt
+    title Timeline: ${selectedClient}
+    dateFormat  YYYY-MM-DD
+    axisFormat  %m/%d
+    section Tasks\n`;
+
+    filteredTasks.forEach(t => {
+        // Map status to Mermaid keywords: 'done', 'active', or empty
+        let statusTag = "";
+        if (t.status === 'Completed') statusTag = "done,";
+        if (t.status === 'In Progress') statusTag = "active,";
+        
+        // Format: Task Name :status, start_date, duration
+        // Using a fallback date if 'Start Date' is missing
+        const startDate = t.start_date || '2023-11-01'; 
+        chartSyntax += `    ${t.Title} :${statusTag} ${startDate}, 7d\n`;
+    });
+
+    renderMermaid(chartSyntax);
+}
+//function for mermaid flowchart
+async function generateFlowchart() {
+    const selectedClient = document.getElementById('client-selector').value;
+    const container = document.getElementById('mermaid-container');
+    
+    let filteredTasks = allTasks;
+    if (selectedClient !== "All") {
+        filteredTasks = allTasks.filter(t => t.Client === selectedClient);
+    }
+
+    // Build Flowchart Syntax
+    let chartSyntax = `graph LR\n`; // LR = Left to Right flow
+    
+    // Define a starting node
+    chartSyntax += `    Start((Start)) --> T0[${filteredTasks[0].Title}]\n`;
+
+    filteredTasks.forEach((task, index) => {
+        const id = `T${index}`;
+        const nextId = `T${index + 1}`;
+        
+        // Node definition with Title and Status
+        chartSyntax += `    ${id}["${task.Title}<br/>(${task.Status})"]\n`;
+
+        // Apply professional colors based on Status
+        if (task.status === 'Completed') {
+            chartSyntax += `    style ${id} fill:#d4edda,stroke:#28a745,stroke-width:2px\n`;
+        } else if (task.status === 'In Progress') {
+            chartSyntax += `    style ${id} fill:#cce5ff,stroke:#007bff,stroke-width:2px\n`;
+        } else {
+            chartSyntax += `    style ${id} fill:#fff3cd,stroke:#ffc107,stroke-width:2px\n`;
+        }
+
+        // Link to next task or End
+        if (index < filteredTasks.length - 1) {
+            chartSyntax += `    ${id} --> ${nextId}\n`;
+        } else {
+            chartSyntax += `    ${id} --> End(((End)))\n`;
+        }
+    });
+
+    renderMermaid(chartSyntax);
+}
+
+// Global render function
+function renderMermaid(syntax) {
+    const container = document.getElementById('mermaid-container');
+    container.innerHTML = `<pre class="mermaid">${syntax}</pre>`;
+    
+    // Re-initialize mermaid to process the new text
+    mermaid.init(undefined, container.querySelectorAll(".mermaid"));
 }
 
 
