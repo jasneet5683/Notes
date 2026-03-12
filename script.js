@@ -129,6 +129,12 @@ async function loadAllTasks() {
         // ✅ CRITICAL: Save to the global variable so charts can see it
         allTasksData = data.tasks || []; 
         console.log('Data synced to allTasksData:', allTasksData);
+      
+        // 🚀 TRIGGER THE DROPDOWN UPDATE HERE
+        if (typeof populateClientDropdown === 'function') {
+        populateClientDropdown(allTasksData);
+        }
+
         
         // Render List (if on Tasks page)
         if (taskListElement) {
@@ -1093,6 +1099,9 @@ window.renderStatusChart = renderStatusChart;
 window.renderResourceChart = renderResourceChart;
 window.toggleChatVoice = toggleChatVoice;
 window.loadVisualization = loadVisualization;
+window.generateGantt = generateGantt;
+window.generateFlowchart = generateFlowchart;
+window.populateClientDropdown = populateClientDropdown;
 //document.addEventListener('DOMContentLoaded', () => {loadAllTasks()});
 // --- 🚀 PAGE INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
