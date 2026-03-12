@@ -918,12 +918,15 @@ function toggleChatVoice() {
 
 //Mermaid functions
 // Initialize Mermaid configuration
-mermaid.initialize({ 
-    startOnLoad: false,
-    theme: 'default',
-    securityLevel: 'loose'
-});
-
+if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({ 
+        startOnLoad: true,
+        theme: 'forest' // or 'default'
+    });
+    console.log("Mermaid initialized successfully! ✅");
+} else {
+    console.warn("Mermaid library not found. Diagrams will not render. ⚠️");
+}
 /**
  * Fetches Mermaid code from the Railway API and renders it.
  * @param {string} type - The type of visualization (e.g., 'gantt' or 'flowchart')
