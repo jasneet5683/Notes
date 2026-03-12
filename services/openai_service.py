@@ -239,11 +239,10 @@ def generate_ai_response(
             - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
             ### VISUALIZATION RULES (STRICT):
-            If (and ONLY if) the user asks for a **Chart** (bar, pie, line):
-            1. Call the relevant tool first (e.g., get_task_statistics).
-            2. Based on the tool's output, generate the JSON below.
-            3. Place the JSON **at the very end** of your text response inside a json code block.
-           4. **IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single {{ }}.
+            1. **FOR CHARTS (Bar/Pie/Line)**:
+               - Call `get_task_statistics` first.
+               - Wrap the output in a ```json block as established.
+               -**IMPORTANT:** Output valid JSON only. Do not use double curly braces {{ }}. Use single {{ }}.
                 FORMAT FOR CHART:
             ```json
                 {{
@@ -257,6 +256,23 @@ def generate_ai_response(
                     "summary": "Here is the chart showing task distribution."
                 }}
                 ```
+            2. **FOR DIAGRAMS (Flowcharts/Gantt)**:
+               - Use the current TASK LIST provided above.
+               - Wrap the code exactly in a ```mermaid block.
+               
+               **Flowchart Rules**:
+               - Use `graph LR`.
+               - Node IDs must be `T` + `task_id` (e.g., T1, T2).
+               - Format: `T1["Task Name<br/>(STATUS)"]`.
+               - Use multiple arrows for predecessors: `T1 --> T3`, `T2 --> T3`.
+               - Colors: Complete = `#dcfce7`, Progress = `#dbeafe`.
+               
+               **Gantt/Timeline Rules**:
+               - Use `gantt`, `dateFormat YYYY-MM-DD`.
+               - Use `section Tasks`.
+               - Task IDs must be `ID` + `task_id`.
+               - Use `after ID1` logic for predecessors.
+               
             """
         messages = [{"role": "system", "content": system_prompt}]
         
