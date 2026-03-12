@@ -946,7 +946,10 @@ function populateClientDropdown(tasks) {
 if (typeof mermaid !== 'undefined') {
     mermaid.initialize({ 
         startOnLoad: true,
-        theme: 'forest' // or 'default'
+        theme: 'neutral',
+        securityLevel: 'loose',
+        flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' },
+        gantt: { useMaxWidth: false, barHeight: 30, fontSize: 12 }
     });
     console.log("Mermaid initialized successfully! ✅");
 } else {
@@ -968,20 +971,15 @@ async function loadVisualization(type) {
 
     try {
         // Update this URL with your actual Railway deployment endpoint
-        const API_URL = `${API_BASE_URL}/viz/${type}`;
-        
+        const API_URL = `${API_BASE_URL}/viz/${type}`; 
         const response = await fetch(API_URL);
-        
         if (!response.ok) {
             throw new Error(`Network response was not ok: ${response.status}`);
         }
-
         const data = await response.json();
-
         if (data.mermaid_code) {
             // Inject the Mermaid syntax into the container
             container.innerHTML = data.mermaid_code;
-            
             // Trigger the Mermaid rendering engine
             await mermaid.run({
                 nodes: [container],
@@ -989,7 +987,6 @@ async function loadVisualization(type) {
         } else {
             container.innerHTML = "⚠️ No chart data found for this selection.";
         }
-
     } catch (err) {
         console.error("Critical Error:", err);
         container.innerHTML = "❌ Error: Could not load the project data. Please check the console.";
@@ -997,92 +994,85 @@ async function loadVisualization(type) {
 }
 
 //Function for Mermaid Gantt Charts
-async function generateGantt() {
+window.generateGantt = function() {
     const selectedClient = document.getElementById('client-selector').value;
     const container = document.getElementById('mermaid-container');
-    
-    // Filter tasks by Client (Capital C)
-   let filteredTasks = allTasksData; 
-    if (selectedClient !== "All") {
-        filteredTasks = allTasksData.filter(t => t.Client === selectedClient);
-    }
+    // Use your global data
+    let filteredTasks = (selectedClient === "All") 
+        ? allTasksData 
+        : allTasksData.filter(t => t.Client === selectedClient);
 
-    if (filteredTasks.length === 0) {
-        container.innerHTML = "<div class='error'>No data found for this client.</div>";
+    if (!filteredTasks || filteredTasks.length === 0) {
+        container.innerHTML = "No tasks found.";
         return;
     }
 
-    // Build Mermaid Gantt Syntax
     let chartSyntax = `gantt
     title Timeline: ${selectedClient}
-    dateFormat  YYYY-MM-DD
-    axisFormat  %m/%d
-    section Tasks\n`;
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+    section Project Tasks\n`;
 
     filteredTasks.forEach(t => {
-        // Map status to Mermaid keywords: 'done', 'active', or empty
-        let statusTag = "";
-        if (t.status === 'Completed') statusTag = "done,";
-        if (t.status === 'In Progress') statusTag = "active,";
+        const id = `ID${t.task_id}`;
+        const name = t.Task_Name || "Unnamed Task";
+        const start = t.start_date || "";
+        const end = t.end_date || "";
+        const pred = t.predecessor ? `after ID${t.predecessor}` : start;
         
-        // Format: Task Name :status, start_date, duration
-        // Using a fallback date if 'Start Date' is missing
-        const startDate = t.start_date || '2023-11-01'; 
-        chartSyntax += `    ${t.Title} :${statusTag} ${startDate}, 7d\n`;
+        let statusTag = "";
+        if (t.status?.toLowerCase().includes('complete')) statusTag = "done,";
+        else if (t.status?.toLowerCase().includes('progress')) statusTag = "active,";
+
+        // Syntax: Task Name :status, id, start/after, end
+        chartSyntax += `    ${name} :${statusTag} ${id}, ${pred}, ${end}\n`;
     });
 
     renderMermaid(chartSyntax);
-}
+};
 
 //function for mermaid flowchart
-async function generateFlowchart() {
+window.generateFlowchart = function() {
     const selectedClient = document.getElementById('client-selector').value;
     const container = document.getElementById('mermaid-container');
     
-   let filteredTasks = allTasksData; 
-    if (selectedClient !== "All") {
-        filteredTasks = allTasksData.filter(t => t.Client === selectedClient);
-    }
+    let filteredTasks = (selectedClient === "All") 
+        ? allTasksData 
+        : allTasksData.filter(t => t.Client === selectedClient);
 
-    // Build Flowchart Syntax
-    let chartSyntax = `graph LR\n`; // LR = Left to Right flow
-    
-    // Define a starting node
-    chartSyntax += `    Start((Start)) --> T0[${filteredTasks[0].Title}]\n`;
+    // graph LR = Left to Right (better for long names)
+    let chartSyntax = `graph LR\n`;
 
-    filteredTasks.forEach((task, index) => {
-        const id = `T${index}`;
-        const nextId = `T${index + 1}`;
-        
-        // Node definition with Title and Status
-        chartSyntax += `    ${id}["${task.Title}<br/>(${task.Status})"]\n`;
+    filteredTasks.forEach(t => {
+        const id = `T${t.task_id}`;
+        const name = t.Task_Name || "Task";
+        const status = (t.status || "Pending").toUpperCase();
 
-        // Apply professional colors based on Status
-        if (task.status === 'Completed') {
-            chartSyntax += `    style ${id} fill:#d4edda,stroke:#28a745,stroke-width:2px\n`;
-        } else if (task.status === 'In Progress') {
-            chartSyntax += `    style ${id} fill:#cce5ff,stroke:#007bff,stroke-width:2px\n`;
-        } else {
-            chartSyntax += `    style ${id} fill:#fff3cd,stroke:#ffc107,stroke-width:2px\n`;
+        // Define the Node
+        chartSyntax += `    ${id}["${name}<br/>(${status})"]\n`;
+
+        // Create the link if a predecessor exists
+        if (t.predecessor) {
+            chartSyntax += `    T${t.predecessor} --> ${id}\n`;
         }
 
-        // Link to next task or End
-        if (index < filteredTasks.length - 1) {
-            chartSyntax += `    ${id} --> ${nextId}\n`;
-        } else {
-            chartSyntax += `    ${id} --> End(((End)))\n`;
+        // Color coding based on your status header
+        if (status.includes('COMPLETE')) {
+            chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
+        } else if (status.includes('PROGRESS')) {
+            chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
         }
     });
 
     renderMermaid(chartSyntax);
-}
+};
 
 // Global render function
 function renderMermaid(syntax) {
     const container = document.getElementById('mermaid-container');
-    container.innerHTML = `<pre class="mermaid">${syntax}</pre>`;
+    container.innerHTML = `<div class="mermaid" style="width: 100%; min-height: 500px;">${syntax}</div>`;
     
-    // Re-initialize mermaid to process the new text
+    // Force re-render
     mermaid.init(undefined, container.querySelectorAll(".mermaid"));
 }
 
