@@ -1097,56 +1097,88 @@ function renderMermaid(syntax) {
 }
 
 // --- 📸 EXPORT CHART AS IMAGE ---
+// --- 📸 CLEAN EXPORT (FIXES TAINTED CANVAS) ---
 window.exportChartAsImage = function() {
     const container = document.getElementById('mermaid-container');
-    const svg = container.querySelector('svg');
+    const originalSvg = container.querySelector('svg');
 
-    if (!svg) {
+    if (!originalSvg) {
         alert("Please generate a chart first!");
         return;
     }
 
-    // 1. Get SVG data and dimensions
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    
-    // Set higher resolution (2x) for better quality
-    const svgSize = svg.getBoundingClientRect();
-    canvas.width = svgSize.width * 2;
-    canvas.height = svgSize.height * 2;
-    ctx.scale(2, 2);
+    try {
+        // 1. Clone the SVG so we don't mess up the screen display
+        const svgClone = originalSvg.cloneNode(true);
+        svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-    // 2. Prepare the Image
-    const img = new Image();
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+        // 2. 🛡️ SANITIZE: Remove external font imports that cause the "Taint"
+        const styles = svgClone.querySelectorAll('style');
+        styles.forEach(style => {
+            let css = style.innerHTML;
+            // This regex removes @import rules that trigger security errors
+            style.innerHTML = css.replace(/@import url$$['"]?https?:\/\/fonts\.googleapis\.com\/css.*?['"]?$$;/g, '');
+        });
 
-    img.onload = function() {
-        // Fill background with white (otherwise it's transparent)
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the SVG image onto the canvas
-        ctx.drawImage(img, 0, 0);
-        
-        // 3. Trigger Download
-        const pngUrl = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        const timestamp = new Date().toISOString().split('T')[0];
-        
-        downloadLink.href = pngUrl;
-        downloadLink.download = `Project_Chart_${timestamp}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        
-        // Cleanup
-        URL.revokeObjectURL(url);
-    };
+        // 3. Serialize to XML
+        const serializer = new XMLSerializer();
+        const svgData = serializer.serializeToString(svgClone);
 
-    img.src = url;
+        // 4. Setup Canvas
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const svgSize = originalSvg.getBoundingClientRect();
+        
+        // Use 2x scale for high resolution
+        const scale = 2;
+        canvas.width = svgSize.width * scale;
+        canvas.height = svgSize.height * scale;
+
+        const img = new Image();
+        
+        // Use Base64 encoding - this is more "trusted" by the canvas than a Blob URL
+        const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
+        img.src = "data:image/svg+xml;base64," + svgBase64;
+
+        img.onload = function() {
+            // Fill background white
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw image at scaled size
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            try {
+                // Try to export as PNG
+                const pngUrl = canvas.toDataURL("image/png");
+                const downloadLink = document.createElement("a");
+                downloadLink.href = pngUrl;
+                downloadLink.download = `Project_Export_${Date.now()}.png`;
+                downloadLink.click();
+            } catch (e) {
+                console.warn("Canvas still tainted, falling back to SVG export.");
+                downloadAsSVG(svgData);
+            }
+        };
+
+    } catch (err) {
+        console.error("Export Error:", err);
+        alert("Export failed. Try right-clicking the chart and 'Save Image As'.");
+    }
 };
+
+// --- 🛡️ FAIL-SAFE: DOWNLOAD AS SVG ---
+function downloadAsSVG(svgData) {
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Project_Export_${Date.now()}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
