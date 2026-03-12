@@ -2,175 +2,169 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Your original gradient is perfect for glass effects */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh; padding: 20px; color: #333;
+    background-attachment: fixed; /* Keeps background still while cards scroll */
+    min-height: 100vh; padding: 20px; color: #1f2937;
 }
 
 .container { max-width: 1200px; margin: 0 auto; }
 
 .header { 
     text-align: center; color: white; margin-bottom: 30px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
-.header h1 { font-size: 2.5em; margin-bottom: 10px; }
+.header h1 { font-size: 2.8em; margin-bottom: 10px; font-weight: 800; }
 
-/* --- SECTIONS & GRID --- */
-.section { 
-    background: white; margin-bottom: 20px; padding: 25px; 
-    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
+/* --- ✨ GLASSMORPHISM SECTIONS --- */
+.section, .split-box { 
+    /* Semi-transparent white */
+    background: rgba(255, 255, 255, 0.75); 
+    /* The Blur Effect */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    margin-bottom: 25px; padding: 25px; 
+    border-radius: 20px; 
+    /* Subtle white border to catch the light */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* Soft Deep Shadow */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.section:hover { transform: translateY(-2px); }
+
+.section:hover { transform: translateY(-3px); }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
 
-/* --- BUTTONS --- */
+/* --- 🚀 DYNAMIC BUTTONS --- */
 .button-row {
-    display: flex; gap: 10px; align-items: center;
+    display: flex; gap: 12px; align-items: center;
     flex-wrap: wrap; margin-bottom: 15px;
 }
 
 button { 
-    flex: 1; padding: 10px 12px; margin: 0;
-    border: none; border-radius: 6px; 
-    font-size: 0.9rem; font-weight: 600; 
+    flex: 1; padding: 12px 15px; margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2); 
+    border-radius: 12px; 
+    font-size: 0.85rem; font-weight: 700; 
     text-transform: uppercase; cursor: pointer;
-    transition: all 0.2s ease; letter-spacing: 0.5px;
+    transition: all 0.3s ease; letter-spacing: 0.8px;
     white-space: nowrap; color: white;
-    background: #667eea;
+    background: rgba(102, 126, 234, 0.9);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 button:hover { 
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
 }
+
 button:active { transform: translateY(0); }
 
-/* Action Colors */
-.btn-health { background: #28a745; }
-.btn-summary { background: #007bff; }
-.btn-download { background: #17a2b8; }
-.btn-refresh { background: #6c757d; }
-.btn-clear { background: #dc3545; }
-.btn-csv { background: #ffc107; color: #212529; }
-.btn-submit { background: #667eea; }
+/* Custom Action Colors with subtle gradients */
+.btn-health { background: linear-gradient(135deg, #28a745, #218838); }
+.btn-summary { background: linear-gradient(135deg, #007bff, #0069d9); }
+.btn-download { background: linear-gradient(135deg, #17a2b8, #138496); }
+.btn-refresh { background: linear-gradient(135deg, #6c757d, #5a6268); }
+.btn-clear { background: linear-gradient(135deg, #dc3545, #c82333); }
+.btn-csv { background: linear-gradient(135deg, #ffc107, #e0a800); color: #212529; }
 
-/* --- INPUTS --- */
+/* --- 📋 TASK CARDS (Nested Glass) --- */
+.task-card { 
+    background: rgba(255, 255, 255, 0.5); /* Lighter glass */
+    border: 1px solid rgba(255, 255, 255, 0.5); 
+    padding: 20px; margin: 15px 0; 
+    border-radius: 15px;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+}
+
+.task-card:hover { 
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transform: translateX(5px); /* Slide effect on hover */
+    border-color: #667eea;
+}
+
+/* --- 🚦 STATUS PILLS --- */
+.status { 
+    padding: 6px 16px; border-radius: 30px; font-size: 11px; 
+    font-weight: 800; text-transform: uppercase; display: inline-block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.status.pending { background: #fff9db; color: #856404; border: 1px solid #ffe066; }
+.status.in-progress { background: #e7f5ff; color: #004085; border: 1px solid #74c0fc; }
+.status.completed { background: #ebfbee; color: #155724; border: 1px solid #63e6be; }
+
+/* --- 💬 CHAT INTERFACE --- */
+.chat-container { height: 550px; display: flex; flex-direction: column; }
+
+.chat-messages { 
+    flex: 1; overflow-y: auto; 
+    border: 1px solid rgba(255, 255, 255, 0.3); 
+    padding: 20px; 
+    background: rgba(255, 255, 255, 0.3); 
+    border-radius: 15px; margin-bottom: 15px;
+    backdrop-filter: blur(8px);
+}
+
+.message { 
+    margin: 12px 0; padding: 14px 18px; border-radius: 20px; max-width: 85%; 
+    line-height: 1.5; font-size: 0.95rem;
+}
+.message.user { 
+    background: linear-gradient(135deg, #667eea, #764ba2); color: white; 
+    margin-left: auto; border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+}
+.message.bot { 
+    background: white; border: 1px solid rgba(0,0,0,0.05); 
+    color: #333; border-bottom-left-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* --- ⌨️ INPUTS --- */
 input, select, textarea { 
-    width: 100%; padding: 12px; margin: 8px 0; 
-    border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
-    transition: all 0.2s ease;
+    width: 100%; padding: 14px; margin: 10px 0; 
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1); 
+    border-radius: 12px; font-size: 16px;
+    transition: all 0.3s ease;
 }
 input:focus, select:focus, textarea:focus {
-    border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: #fff;
+    border-color: #667eea; 
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
     outline: none;
 }
 
-/* --- CARDS & STATUS --- */
-.task-card { 
-    border: 1px solid #e9ecef; padding: 20px; margin: 12px 0; 
-    border-radius: 8px; background: #f8f9fa;
-    transition: all 0.2s ease;
-}
-.task-card:hover { 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
-
-.status { 
-    padding: 6px 14px; border-radius: 25px; font-size: 12px; 
-    font-weight: bold; text-transform: uppercase; display: inline-block;
-}
-.status.pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-.status.in-progress { background: #cce5ff; color: #004085; border: 1px solid #74b9ff; }
-.status.completed { background: #d4edda; color: #155724; border: 1px solid #00b894; }
-
-/* --- CHAT INTERFACE --- */
-.chat-container { height: 500px; display: flex; flex-direction: column; }
-
-.chat-messages { 
-    flex: 1; overflow-y: auto; border: 1px solid #ddd; 
-    padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;
-}
-
-.message { margin: 12px 0; padding: 12px 16px; border-radius: 18px; max-width: 85%; }
-.message.user { 
-    background: linear-gradient(135deg, #667eea, #764ba2); color: white; 
-    margin-left: auto; text-align: right;
-}
-.message.bot { 
-    background: white; border: 1px solid #ddd; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: #333;
-}
-
-/* --- TABLES & DASHBOARD LAYOUT --- */
-.message table {
-    width: 100%; border-collapse: collapse; margin: 15px 0;
-    background: white; border-radius: 5px; overflow: hidden; font-size: 0.9em;
-}
-.message th, .message td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
-.message th { background: #667eea; color: white; }
-.message tr:nth-child(even) { background: #f8f9fa; }
-
-.dashboard-split { display: flex; gap: 20px; margin-top: 20px; align-items: flex-start; }
-.left-panel { flex: 1; min-width: 300px; min-height: 600px; }
-.right-panel-wrapper { flex: 1; display: flex; flex-direction: column; gap: 20px; width: 100%; }
-
-.split-box {
-    background: white; padding: 20px; border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #eee;
-    animation: slideUpFade 0.6s ease-out forwards;
-}
-
-.chart-container { position: relative; height: 250px; width: 100%; }
-
-/* --- CHAT CONTROLS --- */
-.chat-controls {
-    display: flex; align-items: center; gap: 8px; padding: 10px;
-    background: #fff; border-top: 1px solid #eee; border-radius: 0 0 8px 8px;
-}
-.chat-controls input { margin: 0; flex: 1; border-radius: 20px; padding: 10px 15px; }
-
-.icon-btn {
-    background: none; border: none; cursor: pointer; font-size: 1.2rem;
-    padding: 8px 12px; border-radius: 50%; color: #667eea; 
-    transition: all 0.2s ease; flex: 0 0 auto; box-shadow: none;
-}
-.icon-btn:hover { background-color: #f0f0f0; transform: scale(1.1); }
-
-/* --- MERMAID VISUALIZATION --- */
+/* --- 📊 CHARTS & MERMAID --- */
 #mermaid-container {
-    background-color: #ffffff; padding: 25px; border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); border: 1px solid #e0e0e0;
-    margin: 20px auto; overflow: auto; display: inline-block; min-width: 80%;
+    background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); border: 1px solid white;
+    margin: 20px auto;
 }
-#mermaid-container svg { max-width: 100%; height: auto; }
 
-/* --- ANIMATIONS & MEDIA QUERIES --- */
+/* --- 🎞️ ANIMATIONS --- */
 @keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes mic-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+.split-box {
+    animation: slideUpFade 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
-.icon-btn.listening {
-    color: #dc3545 !important; background-color: #ffebee !important;
-    animation: mic-pulse 1.5s infinite;
-}
-
+/* Responsive Fixes */
 @media (max-width: 768px) { 
     .grid, .grid-3, .dashboard-split { grid-template-columns: 1fr; flex-direction: column; }
-    .header h1 { font-size: 2em; }
-    .button-row { flex-direction: column; }
+    .header h1 { font-size: 2.2em; }
+    .button-row { flex-direction: column; align-items: stretch; }
 }
 
-.loading { text-align: center; color: #666; padding: 20px; }
-.error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 4px; }
-.success { color: #155724; background: #d4edda; padding: 10px; border-radius: 4px; }
+.loading { font-weight: 600; color: #667eea; display: flex; align-items: center; justify-content: center; gap: 10px; }
