@@ -1096,6 +1096,58 @@ function renderMermaid(syntax) {
     mermaid.init(undefined, container.querySelectorAll(".mermaid"));
 }
 
+// --- 📸 EXPORT CHART AS IMAGE ---
+window.exportChartAsImage = function() {
+    const container = document.getElementById('mermaid-container');
+    const svg = container.querySelector('svg');
+
+    if (!svg) {
+        alert("Please generate a chart first!");
+        return;
+    }
+
+    // 1. Get SVG data and dimensions
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    
+    // Set higher resolution (2x) for better quality
+    const svgSize = svg.getBoundingClientRect();
+    canvas.width = svgSize.width * 2;
+    canvas.height = svgSize.height * 2;
+    ctx.scale(2, 2);
+
+    // 2. Prepare the Image
+    const img = new Image();
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = function() {
+        // Fill background with white (otherwise it's transparent)
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the SVG image onto the canvas
+        ctx.drawImage(img, 0, 0);
+        
+        // 3. Trigger Download
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        const timestamp = new Date().toISOString().split('T')[0];
+        
+        downloadLink.href = pngUrl;
+        downloadLink.download = `Project_Chart_${timestamp}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Cleanup
+        URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+};
+
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
 window.checkHealth = checkHealth;
