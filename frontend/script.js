@@ -995,15 +995,16 @@ async function loadVisualization(type) {
         container.innerHTML = "❌ Error: Could not load the project data. Please check the console.";
     }
 }
+
 //Function for Mermaid Gantt Charts
 async function generateGantt() {
     const selectedClient = document.getElementById('client-selector').value;
     const container = document.getElementById('mermaid-container');
     
     // Filter tasks by Client (Capital C)
-    let filteredTasks = allTasks; // Your global data array
+   let filteredTasks = allTasksData; 
     if (selectedClient !== "All") {
-        filteredTasks = allTasks.filter(t => t.Client === selectedClient);
+        filteredTasks = allTasksData.filter(t => t.Client === selectedClient);
     }
 
     if (filteredTasks.length === 0) {
@@ -1032,14 +1033,15 @@ async function generateGantt() {
 
     renderMermaid(chartSyntax);
 }
+
 //function for mermaid flowchart
 async function generateFlowchart() {
     const selectedClient = document.getElementById('client-selector').value;
     const container = document.getElementById('mermaid-container');
     
-    let filteredTasks = allTasks;
+   let filteredTasks = allTasksData; 
     if (selectedClient !== "All") {
-        filteredTasks = allTasks.filter(t => t.Client === selectedClient);
+        filteredTasks = allTasksData.filter(t => t.Client === selectedClient);
     }
 
     // Build Flowchart Syntax
