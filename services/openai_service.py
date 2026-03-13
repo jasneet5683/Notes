@@ -259,25 +259,25 @@ def generate_ai_response(
             2. **FOR DIAGRAMS (Flowcharts/Gantt)**:
                - Use the current TASK LIST provided above.
                - Wrap the code exactly in a ```mermaid block.
-               "CRITICAL MERMAID RULES:"
-                "- NEVER use double quotes inside node labels."
-                "- Use square brackets with escaped HTML for labels: T1[Task Name]"
-                "- If task names have special characters, remove them."
-                "- Example format: T1[Task Name - Status]"
- 
-               **Flowchart Rules**:
-               - Use `graph LR`.
-               - Node IDs must be `T` + `task_id` (e.g., T1, T2).
-               - Format: `T1["Task Name<br/>(STATUS)"]`.
-               - Use multiple arrows for predecessors: `T1 --> T3`, `T2 --> T3`.
-               - Colors: Complete = `#dcfce7`, Progress = `#dbeafe`.
-               
-               **Gantt/Timeline Rules**:
-               - Use `gantt`, `dateFormat YYYY-MM-DD`.
-               - Use `section Tasks`.
-               - Task IDs must be `ID` + `task_id`.
-               - Use `after ID1` logic for predecessors.
-               
+            ### CRITICAL MERMAID RULES:
+            1. TYPE SELECTION: 
+            - Use 'graph TD' for Flowcharts/Processes.
+            - Use 'gantt' for Timelines/Schedules.
+            - NEVER mix them (e.g., NO 'section' inside a 'graph').
+
+            2. FLOWCHART SYNTAX (graph TD):
+            - Format: NodeID["Label Text"]
+            - Always put each relationship on a NEW LINE.
+            - Example:
+                 graph TD
+                 A["Start"] --> B["Task 1"]
+                 B --> C["Finish"]
+
+            3. GANTT SYNTAX (gantt):
+            - Use 'section' only here.
+            - Format: Task Name :active, des1, 2024-01-01, 3d
+   
+            4. NO SPECIAL CHARACTERS: Avoid using parentheses () or extra quotes "" inside the labels. Use square brackets [] for all labels.               
             """
         messages = [{"role": "system", "content": system_prompt}]
         
