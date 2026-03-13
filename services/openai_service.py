@@ -259,7 +259,12 @@ def generate_ai_response(
             2. **FOR DIAGRAMS (Flowcharts/Gantt)**:
                - Use the current TASK LIST provided above.
                - Wrap the code exactly in a ```mermaid block.
-               
+               "CRITICAL MERMAID RULES:"
+                "- NEVER use double quotes inside node labels."
+                "- Use square brackets with escaped HTML for labels: T1[Task Name]"
+                "- If task names have special characters, remove them."
+                "- Example format: T1[Task Name - Status]"
+ 
                **Flowchart Rules**:
                - Use `graph LR`.
                - Node IDs must be `T` + `task_id` (e.g., T1, T2).
