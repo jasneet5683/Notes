@@ -1107,13 +1107,38 @@ window.generateGantt = async function() {
 };
 
 // Global render function
-function renderMermaid(syntax) {
+async function renderMermaid(syntax) {
     const container = document.getElementById('mermaid-container');
-    container.innerHTML = `<div class="mermaid" style="width: 100%; min-height: 500px;">${syntax}</div>`;
-    
-    // Force re-render
-    mermaid.init(undefined, container.querySelectorAll(".mermaid"));
+    if (!container) return;
+
+    // 1. Clear previous state and attributes
+    container.innerHTML = ""; 
+    container.removeAttribute('data-processed');
+
+    // 2. Create a fresh inner div
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'mermaid';
+    chartDiv.style.width = '100%';
+    chartDiv.style.minHeight = '500px';
+    chartDiv.textContent = syntax; // Using textContent prevents HTML injection issues
+    container.appendChild(chartDiv);
+
+    try {
+        // 3. Use the modern run command (v10+)
+        await mermaid.run({
+            nodes: [chartDiv],
+        });
+        console.log("✅ Mermaid rendered successfully.");
+    } catch (err) {
+        console.error("❌ Mermaid Syntax Error:", err);
+        container.innerHTML = `<div style="padding:20px; color:#b91c1c; background:#fee2e2; border-radius:8px;">
+            <strong>Diagram Rendering Error:</strong><br/>
+            <small>The AI generated invalid syntax. Try asking it to "fix the flowchart syntax".</small>
+            <pre style="font-size:10px; margin-top:10px;">${syntax}</pre>
+        </div>`;
+    }
 }
+
 
 // --- 📸 EXPORT CHART AS IMAGE ---
 // --- 📸 CLEAN EXPORT (FIXES TAINTED CANVAS) ---
