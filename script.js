@@ -1223,6 +1223,57 @@ function downloadAsSVG(svgData) {
     document.body.removeChild(link);
 }
 
+// 1. Function to handle the "Confirm" button click
+async function handleTaskConfirmation(taskData, buttonElement) {
+    buttonElement.disabled = true;
+    buttonElement.innerText = "⌛ Adding...";
+
+    try {
+        const response = await fetch('https://your-railway-app-url.com/api/add-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            buttonElement.parentElement.innerHTML = `<p style="color: #059669; font-weight: bold;">✅ Task added! (ID: ${result.task_id})</p>`;
+        } else {
+            alert("Error: " + result.error);
+            buttonElement.disabled = false;
+            buttonElement.innerText = "✅ Confirm & Add";
+        }
+    } catch (err) {
+        console.error("Finalizing task failed", err);
+    }
+}
+
+// 2. Logic to insert into your message rendering function
+function formatAIMessage(text) {
+    if (text.includes("TASK_PREVIEW_JSON:")) {
+        const parts = text.split("TASK_PREVIEW_JSON:");
+        const jsonPart = parts[1].split("}")[0] + "}"; // Extract the JSON block
+        const taskData = JSON.parse(jsonPart);
+
+        const cardHtml = `
+            <div class="preview-card" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin: 10px 0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+                <h4 style="margin: 0 0 10px 0; color: #1e293b;">📋 Task Preview</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #475569;">
+                    <div><b>Task:</b> ${taskData.Task_Name}</div>
+                    <div><b>Assignee:</b> ${taskData.assigned_to}</div>
+                    <div><b>End Date:</b> ${taskData.end_date}</div>
+                    <div><b>Priority:</b> ${taskData.Priority}</div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button onclick='handleTaskConfirmation(${JSON.stringify(taskData)}, this)' style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;">✅ Confirm & Add</button>
+                    <button onclick="this.closest('.preview-card').remove()" style="background: #f1f5f9; color: #64748b; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">❌ Cancel</button>
+                </div>
+            </div>
+        `;
+        return parts[0] + cardHtml;
+    }
+    return text;
+}
 
 
 // 🌐 GLOBAL FUNCTIONS (for onclick handlers)
