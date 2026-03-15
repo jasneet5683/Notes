@@ -347,11 +347,11 @@ def generate_ai_response(
                 function_response = "Error: Unknown function."
 
                 try:
-                    if function_name == "add_task_from_ai":
+                    #if function_name == "add_task_from_ai":
                         # We pass **args because 'request_analysis' is already removed
-                        function_response = add_task_from_ai(**args)
+                    #    function_response = add_task_from_ai(**args)
 
-                    elif function_name == "update_task_field":
+                    if function_name == "update_task_field":
                         # Call the function
                         result_dict = update_task_field(**args)
                         # Extract just the message string for the AI to read
