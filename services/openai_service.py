@@ -238,10 +238,11 @@ def generate_ai_response(
             - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
             ### TASK EXTRACTION RULES:
-            When a user wants to add a task, do NOT call any tools yet. 
-            Instead, extract the details and respond with this EXACT JSON format:
+            When a user wants to add a task, generate the TASK_PREVIEW_JSON block but DO NOT call the add_to_sheet function/tool yet.
+            Wait for the user to click the 'Confirm' button in the interface."
             TASK_PREVIEW_JSON:
             {{
+              "ui_type": "TASK_ADDITION" ,
               "task_name": "extracted name",
               "start_date": "{today_date}",
               "end_date": "YYYY-MM-DD",
