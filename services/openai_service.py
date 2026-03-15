@@ -251,7 +251,7 @@ def generate_ai_response(
               "priority": "Medium",
               "predecessor": ""
             }}
-            - Today's date is {today}. Use this to calculate relative dates.
+            - Today's date is {today_date}. Use this to calculate relative dates.
             - After providing the JSON, ask the user: "I've prepared the task details above. Should I add this to the tracker?"
             ### VISUALIZATION RULES (STRICT):
             1. **FOR CHARTS (Bar/Pie/Line)**:
