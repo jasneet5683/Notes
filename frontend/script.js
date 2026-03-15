@@ -389,22 +389,23 @@ function renderAIMessage(content, container) {
     // --- 1. EXTRACT TASK PREVIEW (Fixed to handle multi-line JSON) ---
     if (textContent.includes("TASK_PREVIEW_JSON:")) {
         try {
-            // Find everything after the label
+            // Find where the label starts
             const label = "TASK_PREVIEW_JSON:";
             const labelIndex = textContent.indexOf(label);
-            const rawPartAfterLabel = textContent.substring(labelIndex + label.length).trim();
-
-            // Use a regex to find the first complete JSON object { ... } 
-            // This works even if the JSON has newlines or is inside backticks
-            const jsonMatch = rawPartAfterLabel.match(/\{[\s\S]*\}/);
+            
+            // Extract everything from the label to the end of the string
+            const remainingText = textContent.substring(labelIndex + label.length);
+            // REGEX EXPLANATION: 
+            // Finds the first '{' and the last '}' even if there are newlines or code blocks
+            const jsonMatch = remainingText.match(/\{[\s\S]*\}/);
             
             if (jsonMatch) {
-                const jsonPart = jsonMatch[0];
-                taskPreviewData = JSON.parse(jsonPart);
+                const rawJson = jsonMatch[0];
+                taskPreviewData = JSON.parse(rawJson);
                 
-                // Strip the label and the JSON block from the text so it doesn't show as raw text
-                const textToRemove = textContent.substring(labelIndex);
-                textContent = textContent.replace(textToRemove, "").trim();
+                // Clean the text: Remove the label AND the JSON block from the chat bubble
+                // We leave everything that came BEFORE the label
+                textContent = textContent.substring(0, labelIndex).trim();
             }
         } catch (e) { 
             console.error("Task Preview Parse Error:", e); 
