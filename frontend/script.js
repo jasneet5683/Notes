@@ -1251,7 +1251,7 @@ async function confirmTaskToSheet(taskData, btn) {
     btn.innerHTML = "⌛ Adding...";
 
     try {
-        const response = await fetch('https://your-railway-app.com/tasks', { // Use your real Railway URL
+        const response = await fetch(`${API_BASE_URL}/tasks`), { // Use your real Railway URL
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(taskData)
