@@ -243,7 +243,7 @@ def generate_ai_response(
             TASK_PREVIEW_JSON:
             {{
               "task_name": "extracted name",
-              "start_date": "{today}",
+              "start_date": "{today_date}",
               "end_date": "YYYY-MM-DD",
               "status": "Pending",
               "assigned_to": "extracted name",
