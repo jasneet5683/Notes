@@ -225,7 +225,6 @@ def generate_ai_response(
 
             ### YOUR TOOLS:
             - 'update_task_field': Modify data.
-            - 'add_task_from_ai': Add a new task.
             - 'send_project_email': Send emails.
             - 'check_schedule_conflicts': Check logic.
             - 'filter_tasks_by_date': only when filetr is requested Filter by Month/Date.
@@ -238,6 +237,22 @@ def generate_ai_response(
             - When updating priority, use "High", "Medium", or "Low".
             - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
+            ### TASK EXTRACTION RULES:
+            When a user wants to add a task, do NOT call any tools yet. 
+            Instead, extract the details and respond with this EXACT JSON format:
+            TASK_PREVIEW_JSON:
+            {{
+              "task_name": "extracted name",
+              "start_date": "{today}",
+              "end_date": "YYYY-MM-DD",
+              "status": "Pending",
+              "assigned_to": "extracted name",
+              "client": "extracted client",
+              "priority": "Medium",
+              "predecessor": ""
+            }}
+            - Today's date is {today}. Use this to calculate relative dates.
+            - After providing the JSON, ask the user: "I've prepared the task details above. Should I add this to the tracker?"
             ### VISUALIZATION RULES (STRICT):
             1. **FOR CHARTS (Bar/Pie/Line)**:
                - Call `get_task_statistics` first.
