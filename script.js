@@ -1251,28 +1251,35 @@ async function confirmTaskToSheet(taskData, btn) {
     btn.innerHTML = "⌛ Adding...";
 
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`), { // Use your real Railway URL
+        // FIXED: Corrected the opening of the fetch call
+        const response = await fetch(`${API_BASE_URL}/tasks`, { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(taskData)
         });
 
         const result = await response.json();
+        
         if (response.ok) {
-            btn.closest('.preview-card').innerHTML = `
-                <div style="color: #059669; font-weight: bold; padding: 10px; text-align: center;">
-                    ${result.message} ✨
-                </div>`;
+            // Find the parent card and show success
+            const card = btn.closest('.task-preview-card');
+            if (card) {
+                card.innerHTML = `
+                    <div style="color: #059669; font-weight: bold; padding: 10px; text-align: center; background: #ecfdf5; border-radius: 8px;">
+                        ✅ ${result.message || "Task added to Google Sheets!"} ✨
+                    </div>`;
+            }
         } else {
-            alert("Error: " + (result.detail || "Failed to add task"));
+            // Handle server-side errors (like the connection error we discussed)
+            alert("Error: " + (result.detail || "Failed to add task to sheets. Check Railway logs."));
             btn.disabled = false;
-            btn.innerHTML = "✅ Confirm & Add";
+            btn.innerHTML = "Confirm & Add";
         }
     } catch (err) {
         console.error("Save failed", err);
-        alert("Failed to connect to the server.");
+        alert("Failed to connect to your Railway server. Please check your internet or if the service is awake.");
         btn.disabled = false;
-        btn.innerHTML = "✅ Confirm & Add";
+        btn.innerHTML = "Confirm & Add";
     }
 }
 
