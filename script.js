@@ -386,29 +386,21 @@ function renderAIMessage(content, container) {
     let taskPreviewData = null;
     let chartJsonString = null;
 
-    // --- 1. EXTRACT TASK PREVIEW (Fixed to handle multi-line JSON) ---
-    if (textContent.includes("TASK_PREVIEW_JSON:")) {
+    // --- 1. EXTRACT TASK PREVIEW (Triggered ONLY by ui_type) ---
+    const potentialJsonMatch = textContent.match(/\{[\s\S]*\}/);
+    if (potentialJsonMatch) {
         try {
-            // Find where the label starts
-            const label = "TASK_PREVIEW_JSON:";
-            const labelIndex = textContent.indexOf(label);
+            const rawJson = potentialJsonMatch[0];
+            const parsed = JSON.parse(rawJson);
             
-            // Extract everything from the label to the end of the string
-            const remainingText = textContent.substring(labelIndex + label.length);
-            // REGEX EXPLANATION: 
-            // Finds the first '{' and the last '}' even if there are newlines or code blocks
-            const jsonMatch = remainingText.match(/\{[\s\S]*\}/);
-            
-            if (jsonMatch) {
-                const rawJson = jsonMatch[0];
-                taskPreviewData = JSON.parse(rawJson);
-                
-                // Clean the text: Remove the label AND the JSON block from the chat bubble
-                // We leave everything that came BEFORE the label
-                textContent = textContent.substring(0, labelIndex).trim();
+            // CRITICAL CHECK: Only show the "Add" card if ui_type is TASK_ADDITION
+            if (parsed.ui_type === "TASK_ADDITION") {
+                taskPreviewData = parsed;
+                // Clean the text: Remove the JSON block from the chat bubble
+                textContent = textContent.replace(rawJson, "").replace("TASK_PREVIEW_JSON:", "").trim();
             }
-        } catch (e) { 
-            console.error("Task Preview Parse Error:", e); 
+        } catch (e) {
+            // Not valid JSON or not the right type, let other logic handle it
         }
     }
 
@@ -427,9 +419,9 @@ function renderAIMessage(content, container) {
     }
 
     // --- 3. EXTRACT CHART JSON (Original Logic Preserved) ---
+    // Note: Charts use 'is_chart' or 'chart_type', so they won't trigger Section 1
     const codeBlockRegex = /```(json|chart)\s*([\s\S]*?)\s*```/;
     const chartMatch = textContent.match(codeBlockRegex);
-
     if (chartMatch) {
         try {
             const potentialJson = chartMatch[2];
@@ -477,19 +469,11 @@ function renderAIMessage(content, container) {
                         datasets: [{
                             label: parsedJson.title || "Data",
                             data: parsedJson.data.values,
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)',
-                                'rgba(255, 206, 86, 0.6)', 'rgba(75, 192, 192, 0.6)',
-                                'rgba(153, 102, 255, 0.6)'
-                            ],
+                            backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)'],
                             borderWidth: 1
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
                 });
             } catch (e) { console.error("Chart Render Error:", e); }
         }, 0);
