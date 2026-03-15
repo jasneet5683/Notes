@@ -382,72 +382,71 @@ function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
 
-    // --- 1. NEW: TASK PREVIEW LOGIC ---
+    let textContent = content; // We will strip everything from this variable
     let taskPreviewData = null;
-    if (content.includes("TASK_PREVIEW_JSON:")) {
+    let chartJsonString = null;
+
+    // --- 1. EXTRACT TASK PREVIEW (New Logic) ---
+    if (textContent.includes("TASK_PREVIEW_JSON:")) {
         try {
-            const parts = content.split("TASK_PREVIEW_JSON:");
-            const jsonStr = parts[1].trim().split('\n')[0].trim(); // Get the JSON line
-            taskPreviewData = JSON.parse(jsonStr);
-            
-            // Remove the JSON string from the content so it doesn't show as raw text
-            content = content.replace(`TASK_PREVIEW_JSON: ${jsonStr}`, "").trim();
-            content = content.replace(`TASK_PREVIEW_JSON:${jsonStr}`, "").trim();
-        } catch (e) {
-            console.error("Task Preview Parse Error:", e);
-        }
+            const parts = textContent.split("TASK_PREVIEW_JSON:");
+            // Look for the JSON object immediately following the label
+            const jsonPart = parts[1].trim().split('\n')[0].trim(); 
+            taskPreviewData = JSON.parse(jsonPart);
+            // Strip the label and JSON from the text
+            textContent = textContent.replace(`TASK_PREVIEW_JSON: ${jsonPart}`, "").trim();
+            textContent = textContent.replace(`TASK_PREVIEW_JSON:${jsonPart}`, "").trim();
+        } catch (e) { console.error("Task Preview Parse Error:", e); }
     }
 
-    // --- 2. EXISTING: MERMAID LOGIC ---
+    // --- 2. EXTRACT MERMAID (Original Logic) ---
     const mermaidRegex = /```mermaid\s*([\s\S]*?)\s*```/;
-    const mermaidMatch = content.match(mermaidRegex);
+    const mermaidMatch = textContent.match(mermaidRegex);
     if (mermaidMatch) {
         const mermaidSyntax = mermaidMatch[1].trim();
-        content = content.replace(mermaidMatch[0], "").trim();
-        if (content === "") {
-            content = "I've updated the **Project Visualization** section with the requested diagram! 📊✨";
+        textContent = textContent.replace(mermaidMatch[0], "").trim();
+        if (textContent === "") {
+            textContent = "I've updated the **Project Visualization** section with the requested diagram! 📊✨";
         }
         if (typeof renderMermaid === "function") {
             renderMermaid(mermaidSyntax);
         }
     }
 
-    // --- 3. EXISTING: CHART/JSON LOGIC ---
-    let chartJsonString = null;
-    let textContent = content;
+    // --- 3. EXTRACT CHART JSON (Original Logic) ---
     const codeBlockRegex = /```(json|chart)\s*([\s\S]*?)\s*```/;
-    const match = content.match(codeBlockRegex);
+    const chartMatch = textContent.match(codeBlockRegex);
 
-    if (match) {
+    if (chartMatch) {
         try {
-            const potentialJson = match[2];
+            const potentialJson = chartMatch[2];
             const parsed = JSON.parse(potentialJson);
             if (parsed.is_chart || parsed.chart_type) {
                 chartJsonString = potentialJson;
-                textContent = content.replace(match[0], "").trim();
+                textContent = textContent.replace(chartMatch[0], "").trim();
             }
         } catch (e) {}
     } else {
-        const openBrace = content.indexOf('{');
-        const closeBrace = content.lastIndexOf('}');
+        // Fallback for JSON without backticks
+        const openBrace = textContent.indexOf('{');
+        const closeBrace = textContent.lastIndexOf('}');
         if (openBrace !== -1 && closeBrace > openBrace) {
             try {
-                const potentialJson = content.substring(openBrace, closeBrace + 1);
+                const potentialJson = textContent.substring(openBrace, closeBrace + 1);
                 const parsed = JSON.parse(potentialJson);
-                // Ensure we don't confuse Task Preview JSON with Chart JSON
+                // CRITICAL: Only treat as chart if it has chart keys
                 if (parsed.is_chart || parsed.chart_type) {
                     chartJsonString = potentialJson;
-                    textContent = content.substring(0, openBrace).trim();
+                    textContent = textContent.substring(0, openBrace).trim();
                 }
             } catch (e) {}
         }
     }
 
-    // --- 4. FINAL RENDERING ---
-    // Render the main text message first
+    // --- 4. RENDER FINAL TEXT ---
     msgDiv.innerHTML = marked.parse(textContent);
 
-    // If there's a Chart, append it
+    // --- 5. APPEND CHART (Restored your exact original config) ---
     if (chartJsonString) {
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
@@ -455,43 +454,58 @@ function renderAIMessage(content, container) {
         chartContainer.style.cssText = "margin-top: 15px; height: 300px;";
         chartContainer.innerHTML = `<canvas id="${canvasId}"></canvas>`;
         msgDiv.appendChild(chartContainer);
-        
-        // (Your existing Chart.js initialization code goes here)
+
         setTimeout(() => {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const p = JSON.parse(chartJsonString);
-            new Chart(ctx, {
-                type: p.chart_type || 'bar',
-                data: {
-                    labels: p.data.labels,
-                    datasets: [{ label: p.title || "Data", data: p.data.values, backgroundColor: 'rgba(54, 162, 235, 0.6)' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            try {
+                const parsedJson = JSON.parse(chartJsonString);
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                new Chart(ctx, {
+                    type: parsedJson.chart_type || 'bar',
+                    data: {
+                        labels: parsedJson.data.labels,
+                        datasets: [{
+                            label: parsedJson.title || "Data",
+                            data: parsedJson.data.values,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)',
+                                'rgba(255, 206, 86, 0.6)', 'rgba(75, 192, 192, 0.6)',
+                                'rgba(153, 102, 255, 0.6)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            } catch (e) { console.error("Chart Render Error:", e); }
         }, 0);
     }
 
-    // If there's a Task Preview, append the card
+    // --- 6. APPEND TASK PREVIEW CARD ---
     if (taskPreviewData) {
         const previewCard = document.createElement('div');
         previewCard.className = 'task-preview-card';
-        previewCard.style.cssText = "border: 2px solid #3b82f6; border-radius: 12px; padding: 15px; background: #f8fafc; margin-top: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);";
+        previewCard.style.cssText = "border: 2px solid #3b82f6; border-radius: 12px; padding: 15px; background: #ffffff; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);";
         
         previewCard.innerHTML = `
-            <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1rem;">📋 Review New Task</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #475569;">
-                <div><b>Task:</b> ${taskPreviewData.task_name}</div>
-                <div><b>Who:</b> ${taskPreviewData.assigned_to}</div>
-                <div><b>Due:</b> ${taskPreviewData.end_date}</div>
-                <div><b>Priority:</b> ${taskPreviewData.priority}</div>
+            <div style="font-weight: bold; margin-bottom: 10px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📋</span> Review New Task
             </div>
-            <div style="margin-top: 12px; display: flex; gap: 10px;">
-                <button class="confirm-btn" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">✅ Confirm</button>
-                <button class="cancel-btn" style="background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">❌ Cancel</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #475569;">
+                <div><small style="color: #94a3b8; display: block;">TASK NAME</small><b>${taskPreviewData.task_name}</b></div>
+                <div><small style="color: #94a3b8; display: block;">ASSIGNEE</small><b>${taskPreviewData.assigned_to}</b></div>
+                <div><small style="color: #94a3b8; display: block;">DUE DATE</small><b>${taskPreviewData.end_date}</b></div>
+                <div><small style="color: #94a3b8; display: block;">CLIENT</small><b>${taskPreviewData.client}</b></div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="confirm-btn" style="flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;">Confirm & Add</button>
+                <button class="cancel-btn" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Cancel</button>
             </div>
         `;
 
-        // Attach event listeners to the card buttons
         previewCard.querySelector('.confirm-btn').onclick = () => confirmTaskToSheet(taskPreviewData, previewCard.querySelector('.confirm-btn'));
         previewCard.querySelector('.cancel-btn').onclick = () => previewCard.remove();
         
@@ -501,7 +515,6 @@ function renderAIMessage(content, container) {
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
 }
-
 
 // --- END OF FUNCTION renderAIMessage ---
 // Make sure no other code (like smartColorize) is accidentally inside this function!
