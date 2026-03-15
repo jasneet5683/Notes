@@ -382,24 +382,36 @@ function renderAIMessage(content, container) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message bot';
 
-    let textContent = content; // We will strip everything from this variable
+    let textContent = content; 
     let taskPreviewData = null;
     let chartJsonString = null;
 
-    // --- 1. EXTRACT TASK PREVIEW (New Logic) ---
+    // --- 1. EXTRACT TASK PREVIEW (Fixed to handle multi-line JSON) ---
     if (textContent.includes("TASK_PREVIEW_JSON:")) {
         try {
-            const parts = textContent.split("TASK_PREVIEW_JSON:");
-            // Look for the JSON object immediately following the label
-            const jsonPart = parts[1].trim().split('\n')[0].trim(); 
-            taskPreviewData = JSON.parse(jsonPart);
-            // Strip the label and JSON from the text
-            textContent = textContent.replace(`TASK_PREVIEW_JSON: ${jsonPart}`, "").trim();
-            textContent = textContent.replace(`TASK_PREVIEW_JSON:${jsonPart}`, "").trim();
-        } catch (e) { console.error("Task Preview Parse Error:", e); }
+            // Find everything after the label
+            const label = "TASK_PREVIEW_JSON:";
+            const labelIndex = textContent.indexOf(label);
+            const rawPartAfterLabel = textContent.substring(labelIndex + label.length).trim();
+
+            // Use a regex to find the first complete JSON object { ... } 
+            // This works even if the JSON has newlines or is inside backticks
+            const jsonMatch = rawPartAfterLabel.match(/\{[\s\S]*\}/);
+            
+            if (jsonMatch) {
+                const jsonPart = jsonMatch[0];
+                taskPreviewData = JSON.parse(jsonPart);
+                
+                // Strip the label and the JSON block from the text so it doesn't show as raw text
+                const textToRemove = textContent.substring(labelIndex);
+                textContent = textContent.replace(textToRemove, "").trim();
+            }
+        } catch (e) { 
+            console.error("Task Preview Parse Error:", e); 
+        }
     }
 
-    // --- 2. EXTRACT MERMAID (Original Logic) ---
+    // --- 2. EXTRACT MERMAID (Original Logic Preserved) ---
     const mermaidRegex = /```mermaid\s*([\s\S]*?)\s*```/;
     const mermaidMatch = textContent.match(mermaidRegex);
     if (mermaidMatch) {
@@ -413,7 +425,7 @@ function renderAIMessage(content, container) {
         }
     }
 
-    // --- 3. EXTRACT CHART JSON (Original Logic) ---
+    // --- 3. EXTRACT CHART JSON (Original Logic Preserved) ---
     const codeBlockRegex = /```(json|chart)\s*([\s\S]*?)\s*```/;
     const chartMatch = textContent.match(codeBlockRegex);
 
@@ -427,14 +439,12 @@ function renderAIMessage(content, container) {
             }
         } catch (e) {}
     } else {
-        // Fallback for JSON without backticks
         const openBrace = textContent.indexOf('{');
         const closeBrace = textContent.lastIndexOf('}');
         if (openBrace !== -1 && closeBrace > openBrace) {
             try {
                 const potentialJson = textContent.substring(openBrace, closeBrace + 1);
                 const parsed = JSON.parse(potentialJson);
-                // CRITICAL: Only treat as chart if it has chart keys
                 if (parsed.is_chart || parsed.chart_type) {
                     chartJsonString = potentialJson;
                     textContent = textContent.substring(0, openBrace).trim();
@@ -446,7 +456,7 @@ function renderAIMessage(content, container) {
     // --- 4. RENDER FINAL TEXT ---
     msgDiv.innerHTML = marked.parse(textContent);
 
-    // --- 5. APPEND CHART (Restored your exact original config) ---
+    // --- 5. APPEND CHART (Original Config Preserved) ---
     if (chartJsonString) {
         const canvasId = "chart-" + Date.now();
         const chartContainer = document.createElement("div");
