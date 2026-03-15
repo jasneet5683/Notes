@@ -1067,6 +1067,7 @@ window.generateFlowchart = async function() {
             // 3. Styling
             if (status.includes('COMPLETE')) chartSyntax += `    style ${id} fill:#dcfce7,stroke:#16a34a\n`;
             else if (status.includes('PROGRESS')) chartSyntax += `    style ${id} fill:#dbeafe,stroke:#2563eb\n`;
+            else if (status.includes('HOLD')) chartSyntax += `    style ${id} fill:#5a5a5a,stroke:#ffffff\n`;
         });
 
         renderMermaid(chartSyntax);
