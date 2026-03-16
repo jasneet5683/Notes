@@ -492,6 +492,7 @@ function renderAIMessage(content, container) {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #475569;">
                 <div><small style="color: #94a3b8; display: block;">TASK NAME</small><b>${taskPreviewData.task_name}</b></div>
                 <div><small style="color: #94a3b8; display: block;">ASSIGNEE</small><b>${taskPreviewData.assigned_to}</b></div>
+                <div><small style="color: #94a3b8; display: block;">START DATE</small><b>${displayStart}</b></div>
                 <div><small style="color: #94a3b8; display: block;">DUE DATE</small><b>${taskPreviewData.end_date}</b></div>
                 <div><small style="color: #94a3b8; display: block;">CLIENT</small><b>${taskPreviewData.client}</b></div>
             </div>
