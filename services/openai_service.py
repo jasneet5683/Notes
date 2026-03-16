@@ -237,6 +237,7 @@ def generate_ai_response(
             - When updating priority, use "High", "Medium", or "Low".
             - If the tool returns a list of tasks, format them nicely as a Markdown table.
             - If the tool returns "No tasks found", tell the user exactly that.
+            - If the user requests flowchart, gantt charts, mind maps check mermaid rules.
             ### TASK EXTRACTION RULES:
             When a user wants to add a task, generate the TASK_PREVIEW_JSON block but DO NOT call the add_to_sheet function/tool yet.
             If the user does not specify a start date, only then you must automatically set "start_date" to the today's date {today_date}.
@@ -309,7 +310,8 @@ def generate_ai_response(
         # --- 1. FIRST API CALL ---
         print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen-2.5-coder-32b",
+            #model="llama-3.3-70b-versatile",
             #model="llama-3.1-8b-instant",
             messages=messages,
             tools=tools,
