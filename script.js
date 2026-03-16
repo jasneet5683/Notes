@@ -480,33 +480,42 @@ function renderAIMessage(content, container) {
     }
 
     // --- 6. APPEND TASK PREVIEW CARD ---
-    if (taskPreviewData) {
-        const previewCard = document.createElement('div');
-        previewCard.className = 'task-preview-card';
-        previewCard.style.cssText = "border: 2px solid #3b82f6; border-radius: 12px; padding: 15px; background: #ffffff; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);";
-        
-        previewCard.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 10px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">📋</span> Review New Task
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #475569;">
-                <div><small style="color: #94a3b8; display: block;">TASK NAME</small><b>${taskPreviewData.task_name}</b></div>
-                <div><small style="color: #94a3b8; display: block;">ASSIGNEE</small><b>${taskPreviewData.assigned_to}</b></div>
-                <div><small style="color: #94a3b8; display: block;">START DATE</small><b>${displayStart}</b></div>
-                <div><small style="color: #94a3b8; display: block;">DUE DATE</small><b>${taskPreviewData.end_date}</b></div>
-                <div><small style="color: #94a3b8; display: block;">CLIENT</small><b>${taskPreviewData.client}</b></div>
-            </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button class="confirm-btn" style="flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;">Confirm & Add</button>
-                <button class="cancel-btn" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Cancel</button>
-            </div>
-        `;
+   // --- UPDATED TASK PREVIEW CARD (Including Start Date) ---
+if (taskPreviewData) {
+    const previewCard = document.createElement('div');
+    previewCard.className = 'task-preview-card';
+    previewCard.style.cssText = "border: 2px solid #3b82f6; border-radius: 12px; padding: 15px; background: #ffffff; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);";
+    
+    // Logic to handle if start_date is missing (as a fallback)
+    const displayStart = taskPreviewData.start_date || new Date().toISOString().split('T')[0];
 
-        previewCard.querySelector('.confirm-btn').onclick = () => confirmTaskToSheet(taskPreviewData, previewCard.querySelector('.confirm-btn'));
-        previewCard.querySelector('.cancel-btn').onclick = () => previewCard.remove();
-        
-        msgDiv.appendChild(previewCard);
-    }
+    previewCard.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 10px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">📋</span> Review New Task
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #475569;">
+            <div><small style="color: #94a3b8; display: block;">TASK NAME</small><b>${taskPreviewData.task_name}</b></div>
+            <div><small style="color: #94a3b8; display: block;">ASSIGNEE</small><b>${taskPreviewData.assigned_to}</b></div>
+            
+            <div><small style="color: #94a3b8; display: block;">START DATE</small><b>${displayStart}</b></div>
+            
+            <div><small style="color: #94a3b8; display: block;">DUE DATE</small><b>${taskPreviewData.end_date}</b></div>
+            <div><small style="color: #94a3b8; display: block;">CLIENT</small><b>${taskPreviewData.client}</b></div>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button class="confirm-btn" style="flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;">Confirm & Add</button>
+            <button class="cancel-btn" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Cancel</button>
+        </div>
+    `;
+
+    // Ensure the data passed to the confirm function includes the assumed start date
+    const finalData = { ...taskPreviewData, start_date: displayStart };
+
+    previewCard.querySelector('.confirm-btn').onclick = () => confirmTaskToSheet(finalData, previewCard.querySelector('.confirm-btn'));
+    previewCard.querySelector('.cancel-btn').onclick = () => previewCard.remove();
+    
+    msgDiv.appendChild(previewCard);
+}
 
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
