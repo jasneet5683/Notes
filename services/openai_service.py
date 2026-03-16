@@ -310,7 +310,7 @@ def generate_ai_response(
         # --- 1. FIRST API CALL ---
         print("🔹 Sending request to OpenAI...", flush=True)
         response = client.chat.completions.create(
-            model="qwen-2.5-32b",
+            model="qwen-2.5-coder-32b-instruct",
             #model="llama-3.3-70b-versatile",
             #model="llama-3.1-8b-instant",
             messages=messages,
