@@ -239,7 +239,9 @@ def generate_ai_response(
             - If the tool returns "No tasks found", tell the user exactly that.
             ### TASK EXTRACTION RULES:
             When a user wants to add a task, generate the TASK_PREVIEW_JSON block but DO NOT call the add_to_sheet function/tool yet.
-            Whenever the user asks to add a task but does not specify a start date, you must automatically set "start_date" to the today's date {today_date}.
+            If the user does not specify a start date, only then you must automatically set "start_date" to the today's date {today_date}.
+            If the user provides a date (e.g., "Starting Monday" or "On June 1st"), use that date only.
+            NEVER generate more than one task JSON block for a single request unless the user explicitly asks for multiple tasks.
             Wait for the user to click the 'Confirm' button in the interface."
             TASK_PREVIEW_JSON:
             {{
